@@ -18,8 +18,11 @@
 
   <header class="app-header">
     <h1 class="app-title">🕌 قضاء الصلوات</h1>
-    <button id="btn-settings" class="icon-btn" aria-label="الإعدادات" hidden>⚙️</button>
-    <button id="btn-back" class="icon-btn" aria-label="رجوع" hidden>←</button>
+    <div class="header-actions">
+      <button id="btn-share" class="icon-btn" aria-label="مشاركة التطبيق">📤</button>
+      <button id="btn-settings" class="icon-btn" aria-label="الإعدادات" hidden>⚙️</button>
+      <button id="btn-back" class="icon-btn" aria-label="رجوع" hidden>←</button>
+    </div>
   </header>
 
   <main id="app">
@@ -224,6 +227,7 @@
 
   <div id="install-hint" class="install-hint" hidden>
     <span id="install-hint-text"></span>
+    <button id="btn-install" class="btn-primary btn-install" hidden>⬇️ ثبّت التطبيق</button>
     <button id="install-hint-close" class="icon-btn" aria-label="إغلاق">✕</button>
   </div>
 

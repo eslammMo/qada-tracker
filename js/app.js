@@ -713,6 +713,47 @@ $("toast-undo").addEventListener("click", () => {
   toastEl.hidden = true;
 });
 
+/* ═══════════════════ المشاركة والتثبيت ═══════════════════ */
+
+$("btn-share").addEventListener("click", async () => {
+  const url = location.origin + location.pathname;
+  const data = {
+    title: "قضاء الصلوات",
+    text: "تطبيق مجاني لمتابعة قضاء الصلوات — يعمل بدون إنترنت 🕌",
+    url,
+  };
+  if (navigator.share) {
+    try { await navigator.share(data); } catch { /* أغلق المستخدم نافذة المشاركة */ }
+  } else if (navigator.clipboard) {
+    await navigator.clipboard.writeText(url);
+    showToast("تم نسخ رابط التطبيق — أرسله لأصدقائك");
+  }
+});
+
+let deferredInstallPrompt = null;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if (localStorage.getItem("qada-install-hint-dismissed")) return;
+  // ترقية شريط التلميح النصي إلى زر تثبيت حقيقي بضغطة واحدة
+  $("install-hint-text").textContent = "ثبّته كتطبيق حقيقي يعمل بدون إنترنت:";
+  $("btn-install").hidden = false;
+  $("install-hint").hidden = false;
+});
+
+$("btn-install").addEventListener("click", () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt = null;
+});
+
+window.addEventListener("appinstalled", () => {
+  $("install-hint").hidden = true;
+  localStorage.setItem("qada-install-hint-dismissed", "1");
+  showToast("تم تثبيت التطبيق — تجده في الشاشة الرئيسية 🎉");
+});
+
 /* ═══════════════════ تلميح التثبيت ═══════════════════ */
 
 function maybeShowInstallHint() {

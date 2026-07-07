@@ -66,6 +66,16 @@ body {
 }
 
 .app-title { font-size: 1.25rem; font-weight: 700; }
+.header-actions { display: flex; align-items: center; }
+
+.install-hint .btn-install {
+  width: auto;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: .9rem;
+  flex-shrink: 0;
+}
+.install-hint #install-hint-text { flex: 1; min-width: 0; }
 
 #app {
   max-width: 560px;
