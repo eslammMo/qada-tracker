@@ -1,6 +1,9 @@
 "use strict";
 
-const CACHE_NAME = "qada-v1";
+const CACHE_NAME = "qada-v3";
+
+// عدّل هذين مع كل إصدار: اسم الذاكرة أعلاه + وصف قصير للتحديث هنا
+const UPDATE_NOTE = "جديد: تنبيه بالسنة الكبيسة للسنوات الميلادية، وإشعار داخل التطبيق عند توفر تحديث.";
 const ASSETS = [
   "./",
   "./index.html",
@@ -23,6 +26,11 @@ self.addEventListener("activate", (event) => {
     caches.keys()
       .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: "window" }))
+      .then((clients) => {
+        // إبلاغ الصفحات المفتوحة بأن نسخة جديدة صارت جاهزة
+        clients.forEach((c) => c.postMessage({ type: "UPDATE_READY", note: UPDATE_NOTE }));
+      })
   );
 });
 

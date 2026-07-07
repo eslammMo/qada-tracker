@@ -52,6 +52,8 @@
           <label><input type="radio" name="calendar" value="gregorian"> ميلادية (٣٦٥ يوم)</label>
         </fieldset>
 
+        <p id="leap-note" class="leap-note" hidden></p>
+
         <p id="setup-preview" class="preview-text" hidden></p>
 
         <button type="submit" class="btn-primary">احسب وابدأ</button>
@@ -130,6 +132,14 @@
   <div id="toast" class="toast" hidden>
     <span id="toast-text"></span>
     <button id="toast-undo" class="toast-undo" hidden>تراجع</button>
+  </div>
+
+  <div id="update-banner" class="update-banner" hidden>
+    <div class="update-text">
+      <strong>يتوفر تحديث جديد ✨</strong>
+      <span id="update-note"></span>
+    </div>
+    <button id="btn-update" class="btn-primary">تحديث الآن</button>
   </div>
 
   <div id="install-hint" class="install-hint" hidden>

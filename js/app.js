@@ -114,7 +114,27 @@ function readSetupInputs() {
   return { years, months, days, calendar, totalDays: years * yearDays + months * MONTH_DAYS + days };
 }
 
+function updateLeapNote() {
+  const { years, calendar } = readSetupInputs();
+  const el = $("leap-note");
+  if (calendar !== "gregorian") {
+    el.hidden = true;
+    return;
+  }
+  const extraDays = Math.floor(years / 4);
+  const daysWord =
+    extraDays === 1 ? "يوم واحد" :
+    extraDays === 2 ? "يومين" :
+    extraDays <= 10 ? `${num(extraDays)} أيام` :
+    `${num(extraDays)} يومًا`;
+  el.hidden = false;
+  el.textContent = extraDays > 0
+    ? `⚠️ ملاحظة: كل ٤ سنوات ميلادية تقريبًا فيها سنة كبيسة (٣٦٦ يومًا). لمدة ${num(years)} سنة قد تحتاج إضافة نحو ${daysWord} في خانة الأيام.`
+    : "⚠️ ملاحظة: كل ٤ سنوات ميلادية تقريبًا فيها سنة كبيسة (٣٦٦ يومًا)، فقد تحتاج إضافة يوم لكل ٤ سنوات في خانة الأيام.";
+}
+
 function updateSetupPreview() {
+  updateLeapNote();
   const { totalDays } = readSetupInputs();
   const el = $("setup-preview");
   if (totalDays > 0) {
@@ -403,5 +423,20 @@ if (state) {
 maybeShowInstallHint();
 
 if ("serviceWorker" in navigator) {
+  // إن لم يكن للصفحة متحكّم سابق فهذا أول تثبيت وليس تحديثًا — لا نظهر الإشعار
+  const isUpdate = Boolean(navigator.serviceWorker.controller);
+
+  navigator.serviceWorker.addEventListener("message", (e) => {
+    if (isUpdate && e.data && e.data.type === "UPDATE_READY") {
+      $("update-note").textContent = e.data.note || "";
+      $("update-banner").hidden = false;
+    }
+  });
+
+  $("btn-update").addEventListener("click", () => {
+    if (state) persist();
+    location.reload();
+  });
+
   navigator.serviceWorker.register("sw.js").catch(() => { /* يعمل التطبيق بدونه، فقط بلا وضع عدم الاتصال */ });
 }
