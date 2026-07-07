@@ -19,9 +19,13 @@
   <header class="app-header">
     <h1 class="app-title">🕌 قضاء الصلوات</h1>
     <div class="header-actions">
-      <button id="btn-share" class="icon-btn" aria-label="مشاركة التطبيق">📤</button>
-      <button id="btn-settings" class="icon-btn" aria-label="الإعدادات" hidden>⚙️</button>
-      <button id="btn-back" class="icon-btn" aria-label="رجوع" hidden>←</button>
+      <button id="btn-share" class="icon-btn" aria-label="مشاركة التطبيق" title="مشاركة التطبيق">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+          <path d="M13.12 17.02c-4.55 0-7.6 1.24-9.93 4.2-.34.43-1.02.15-.96-.4C2.9 14.7 6.79 10.42 13.12 9.85V5.44c0-.5.6-.76 .96-.41l7.76 7.42c.23.22.23.58 0 .8l-7.76 7.42c-.36.35-.96.09-.96-.41v-3.24z"/>
+        </svg>
+      </button>
+      <button id="btn-settings" class="icon-btn" aria-label="الإعدادات" title="الإعدادات" hidden>⚙️</button>
+      <button id="btn-back" class="icon-btn" aria-label="رجوع" title="رجوع" hidden>←</button>
     </div>
   </header>
 
@@ -73,6 +77,13 @@
 
       <!-- ─── تبويب الصلاة ─── -->
       <div id="tab-prayers" class="tab-panel">
+        <div id="install-card" class="card install-card" hidden>
+          <button id="install-card-close" class="icon-btn install-card-close" aria-label="إغلاق" title="إغلاق">✕</button>
+          <h2 class="section-title">⬇️ ثبّت التطبيق على جهازك</h2>
+          <p class="hint-text">أيقونة على شاشتك الرئيسية، ويعمل بدون إنترنت كتطبيق حقيقي.</p>
+          <button id="btn-install" class="btn-primary" title="تثبيت التطبيق">التثبيت الآن</button>
+        </div>
+
         <div class="card overall-card">
           <div class="overall-ring-wrap">
             <svg class="overall-ring" viewBox="0 0 100 100" aria-hidden="true">
@@ -227,8 +238,7 @@
 
   <div id="install-hint" class="install-hint" hidden>
     <span id="install-hint-text"></span>
-    <button id="btn-install" class="btn-primary btn-install" hidden>⬇️ ثبّت التطبيق</button>
-    <button id="install-hint-close" class="icon-btn" aria-label="إغلاق">✕</button>
+    <button id="install-hint-close" class="icon-btn" aria-label="إغلاق" title="إغلاق">✕</button>
   </div>
 
   <script src="js/app.js"></script>

@@ -68,14 +68,23 @@ body {
 .app-title { font-size: 1.25rem; font-weight: 700; }
 .header-actions { display: flex; align-items: center; }
 
-.install-hint .btn-install {
-  width: auto;
-  min-height: 44px;
-  padding: 0 16px;
-  font-size: .9rem;
-  flex-shrink: 0;
-}
 .install-hint #install-hint-text { flex: 1; min-width: 0; }
+
+.install-card {
+  position: relative;
+  border-color: var(--accent);
+}
+.install-card .section-title { padding-inline-end: 40px; }
+.install-card-close {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 6px;
+  min-width: 40px;
+  min-height: 40px;
+  font-size: 1rem;
+  color: var(--muted);
+}
+.icon-btn svg { display: block; margin: 0 auto; }
 
 #app {
   max-width: 560px;
@@ -99,7 +108,16 @@ body {
 .muted { color: var(--muted); }
 
 /* ═══════════ الأزرار ═══════════ */
-button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* touch-action: manipulation يلغي تكبير النقر المزدوج فتُحتسب النقرات السريعة فورًا */
+button {
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+input { touch-action: manipulation; }
 
 .icon-btn {
   background: none;

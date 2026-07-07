@@ -742,19 +742,24 @@ window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
   if (localStorage.getItem("qada-install-hint-dismissed")) return;
-  // ترقية شريط التلميح النصي إلى زر تثبيت حقيقي بضغطة واحدة
-  $("install-hint-text").textContent = "ثبّته كتطبيق حقيقي يعمل بدون إنترنت:";
-  $("btn-install").hidden = false;
-  setInstallHint(true);
+  setInstallHint(false); // بطاقة التثبيت البارزة تغني عن شريط التعليمات
+  $("install-card").hidden = false;
 });
 
 $("btn-install").addEventListener("click", () => {
   if (!deferredInstallPrompt) return;
   deferredInstallPrompt.prompt();
   deferredInstallPrompt = null;
+  $("install-card").hidden = true;
+});
+
+$("install-card-close").addEventListener("click", () => {
+  $("install-card").hidden = true;
+  localStorage.setItem("qada-install-hint-dismissed", "1");
 });
 
 window.addEventListener("appinstalled", () => {
+  $("install-card").hidden = true;
   setInstallHint(false);
   localStorage.setItem("qada-install-hint-dismissed", "1");
   showToast("تم تثبيت التطبيق — تجده في الشاشة الرئيسية 🎉");
