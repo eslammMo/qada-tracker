@@ -732,6 +732,12 @@ $("btn-share").addEventListener("click", async () => {
 
 let deferredInstallPrompt = null;
 
+// إظهار/إخفاء الشريط مع حجز مساحة له أسفل التطبيق
+function setInstallHint(visible) {
+  $("install-hint").hidden = !visible;
+  document.body.classList.toggle("has-install-hint", visible);
+}
+
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
@@ -739,7 +745,7 @@ window.addEventListener("beforeinstallprompt", (e) => {
   // ترقية شريط التلميح النصي إلى زر تثبيت حقيقي بضغطة واحدة
   $("install-hint-text").textContent = "ثبّته كتطبيق حقيقي يعمل بدون إنترنت:";
   $("btn-install").hidden = false;
-  $("install-hint").hidden = false;
+  setInstallHint(true);
 });
 
 $("btn-install").addEventListener("click", () => {
@@ -749,7 +755,7 @@ $("btn-install").addEventListener("click", () => {
 });
 
 window.addEventListener("appinstalled", () => {
-  $("install-hint").hidden = true;
+  setInstallHint(false);
   localStorage.setItem("qada-install-hint-dismissed", "1");
   showToast("تم تثبيت التطبيق — تجده في الشاشة الرئيسية 🎉");
 });
@@ -764,11 +770,11 @@ function maybeShowInstallHint() {
   $("install-hint-text").textContent = isIOS
     ? "للتثبيت: اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية»"
     : "للتثبيت: افتح قائمة المتصفح ⋮ ثم «إضافة إلى الشاشة الرئيسية»";
-  $("install-hint").hidden = false;
+  setInstallHint(true);
 }
 
 $("install-hint-close").addEventListener("click", () => {
-  $("install-hint").hidden = true;
+  setInstallHint(false);
   localStorage.setItem("qada-install-hint-dismissed", "1");
 });
 
