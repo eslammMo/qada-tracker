@@ -19,11 +19,17 @@
   <header class="app-header">
     <h1 class="app-title">🕌 قضاء الصلوات</h1>
     <div class="header-actions">
+      <button id="btn-install-icon" class="icon-btn" aria-label="تثبيت التطبيق" title="تثبيت التطبيق" hidden>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+          <path d="M12 3a1 1 0 0 1 1 1v8.6l2.8-2.8a1 1 0 1 1 1.4 1.4l-4.5 4.5a1 1 0 0 1-1.4 0L6.8 11.2a1 1 0 1 1 1.4-1.4L11 12.6V4a1 1 0 0 1 1-1zM5 18a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1z"/>
+        </svg>
+      </button>
       <button id="btn-share" class="icon-btn" aria-label="مشاركة التطبيق" title="مشاركة التطبيق">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
           <path d="M13.12 17.02c-4.55 0-7.6 1.24-9.93 4.2-.34.43-1.02.15-.96-.4C2.9 14.7 6.79 10.42 13.12 9.85V5.44c0-.5.6-.76 .96-.41l7.76 7.42c.23.22.23.58 0 .8l-7.76 7.42c-.36.35-.96.09-.96-.41v-3.24z"/>
         </svg>
       </button>
+      <button id="btn-help" class="icon-btn btn-help" aria-label="مساعدة" title="مساعدة" hidden>؟</button>
       <button id="btn-settings" class="icon-btn" aria-label="الإعدادات" title="الإعدادات" hidden>⚙️</button>
       <button id="btn-back" class="icon-btn" aria-label="رجوع" title="رجوع" hidden>←</button>
     </div>
@@ -209,7 +215,60 @@
         </div>
       </div>
     </section>
+
+    <!-- ═══════════ شاشة المساعدة ═══════════ -->
+    <section id="view-help" class="view" hidden>
+      <div class="card">
+        <h2 class="section-title">🧮 حساب القضاء</h2>
+        <p class="hint-text">أدخل المدة التي فاتتك (سنوات/شهور/أيام) بالتقويم الهجري أو الميلادي، ويحسب التطبيق عدد الصلوات المطلوبة لكل فرض. يمكنك إعادة الحساب لاحقًا من الإعدادات <strong>دون فقدان ما أنجزته</strong>.</p>
+      </div>
+      <div class="card">
+        <h2 class="section-title">🕌 عدّادات الصلوات</h2>
+        <p class="hint-text">اضغط <strong>+١</strong> بعد كل صلاة تقضيها، و<strong>−١</strong> للتراجع عن ضغطة بالخطأ، و<strong>+٥</strong> لإضافة عدد كبير دفعة واحدة (مع زر تراجع في الرسالة). عند اكتمال فرض تظهر علامة ✓ ويُقفل عدّاده.</p>
+      </div>
+      <div class="card">
+        <h2 class="section-title">✓ زر اليوم الكامل</h2>
+        <p class="hint-text">قضيت يومًا كاملًا مع صلوات يومك؟ ضغطة واحدة تضيف صلاة لكل فرض من الفروض الخمسة، مع إمكانية التراجع.</p>
+      </div>
+      <div class="card">
+        <h2 class="section-title">🌙 قضاء الصيام</h2>
+        <p class="hint-text">من تبويب «الصيام» أدخل عدد الأيام التي عليك قضاؤها، وسجّل كل يوم تصومه بنفس طريقة عدّادات الصلوات.</p>
+      </div>
+      <div class="card">
+        <h2 class="section-title">📊 الإحصائيات</h2>
+        <p class="hint-text">تبويب «الإحصائيات» يعرض: هدفك اليومي وتقدمك فيه، سلسلة الأيام المتتالية 🔥، التاريخ المتوقع لإنهاء القضاء (هجري وميلادي)، ومخطط آخر ١٤ يومًا. حدد هدفك اليومي من الإعدادات.</p>
+      </div>
+      <div class="card">
+        <h2 class="section-title">⚙️ الإعدادات</h2>
+        <p class="hint-text">تعديل الأعداد المطلوبة <strong>يحافظ دائمًا على ما أنجزته</strong>. من هناك أيضًا: الهدف اليومي، تصدير نسخة احتياطية من بياناتك واستيرادها، وإعادة التعيين الكامل.</p>
+      </div>
+      <div class="card">
+        <h2 class="section-title">📲 التثبيت والعمل بدون إنترنت</h2>
+        <p class="hint-text">ثبّت التطبيق من زر التثبيت في الشريط العلوي ليظهر بأيقونة على شاشتك الرئيسية ويعمل بدون إنترنت تمامًا. بياناتك محفوظة على جهازك فقط.</p>
+      </div>
+      <div class="card">
+        <h2 class="section-title">🔗 المشاركة</h2>
+        <p class="hint-text">زر المشاركة في الشريط العلوي يرسل رابط التطبيق لأصدقائك عبر واتساب أو غيره.</p>
+      </div>
+      <button id="btn-replay-tour" class="btn-secondary">▶ إعادة عرض الجولة التعريفية</button>
+    </section>
   </main>
+
+  <!-- الجولة التعريفية -->
+  <div id="tour" class="tour" hidden>
+    <div id="tour-highlight" class="tour-highlight"></div>
+    <div id="tour-bubble" class="tour-bubble">
+      <h3 id="tour-title"></h3>
+      <p id="tour-text"></p>
+      <div class="tour-footer">
+        <div id="tour-dots" class="tour-dots"></div>
+        <div class="tour-btns">
+          <button id="tour-skip" class="tour-skip">تخطي</button>
+          <button id="tour-next" class="btn-primary tour-next">التالي</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- نافذة الإضافة المخصصة -->
   <dialog id="bulk-dialog">

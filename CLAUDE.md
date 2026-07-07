@@ -38,6 +38,11 @@ Single object in `localStorage` under key `qada-state-v1` (key name kept for com
 2. Set `UPDATE_NOTE` in `sw.js` to a short Arabic description of what changed — it is shown to users in the in-app update banner (new SW posts `{type:"UPDATE_READY", note}` to open pages on activate; app.js shows `#update-banner` only when the page already had a controller, so first installs don't see it).
 3. Commit and push to `main` — GitHub Pages redeploys automatically.
 
+## Other localStorage keys
+
+- `qada-install-hint-dismissed` — user dismissed install card/hint (or app got installed)
+- `qada-tour-done` — onboarding tour already shown (set when the tour *starts*; replayable from the help view `#view-help` via `startTour()`)
+
 ## Conventions
 
 - UI text is Arabic; numbers displayed with `Intl.NumberFormat("ar-EG")` via the `num()` helper. Mind Arabic pluralization (يوم واحد / يومين / أيام / يومًا).

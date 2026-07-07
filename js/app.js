@@ -145,6 +145,7 @@ const views = {
   setup: $("view-setup"),
   main: $("view-main"),
   settings: $("view-settings"),
+  help: $("view-help"),
 };
 
 let currentView = "setup";
@@ -153,6 +154,7 @@ function showView(name) {
   currentView = name;
   for (const key of Object.keys(views)) views[key].hidden = key !== name;
   $("btn-settings").hidden = name !== "main";
+  $("btn-help").hidden = name !== "main";
   $("btn-back").hidden = name === "main" || (name === "setup" && !state);
   if (name === "main") renderMain();
   if (name === "settings") renderSettingsInputs();
@@ -220,6 +222,7 @@ $("setup-form").addEventListener("submit", (e) => {
   persist();
   buildPrayerCards();
   showView("main");
+  maybeStartTour();
 });
 
 /* ═══════════════════ الشاشة الرئيسية ═══════════════════ */
@@ -738,20 +741,39 @@ function setInstallHint(visible) {
   document.body.classList.toggle("has-install-hint", visible);
 }
 
+function isAppInstalled() {
+  return window.matchMedia("(display-mode: standalone)").matches || Boolean(navigator.standalone);
+}
+
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
+  if (isAppInstalled()) return;
+  $("btn-install-icon").hidden = false; // أيقونة دائمة في الشريط العلوي
   if (localStorage.getItem("qada-install-hint-dismissed")) return;
   setInstallHint(false); // بطاقة التثبيت البارزة تغني عن شريط التعليمات
   $("install-card").hidden = false;
 });
 
-$("btn-install").addEventListener("click", () => {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  deferredInstallPrompt = null;
-  $("install-card").hidden = true;
-});
+function requestInstall() {
+  // التأكد أولًا أن التطبيق ليس مثبتًا بالفعل
+  if (isAppInstalled()) {
+    $("btn-install-icon").hidden = true;
+    $("install-card").hidden = true;
+    showToast("التطبيق مثبت بالفعل على جهازك ✓");
+    return;
+  }
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt = null;
+    $("install-card").hidden = true;
+  } else {
+    showToast("للتثبيت: افتح قائمة المتصفح ⋮ ثم «إضافة إلى الشاشة الرئيسية»");
+  }
+}
+
+$("btn-install").addEventListener("click", requestInstall);
+$("btn-install-icon").addEventListener("click", requestInstall);
 
 $("install-card-close").addEventListener("click", () => {
   $("install-card").hidden = true;
@@ -760,9 +782,86 @@ $("install-card-close").addEventListener("click", () => {
 
 window.addEventListener("appinstalled", () => {
   $("install-card").hidden = true;
+  $("btn-install-icon").hidden = true;
   setInstallHint(false);
   localStorage.setItem("qada-install-hint-dismissed", "1");
   showToast("تم تثبيت التطبيق — تجده في الشاشة الرئيسية 🎉");
+});
+
+/* ═══════════════════ المساعدة والجولة التعريفية ═══════════════════ */
+
+$("btn-help").addEventListener("click", () => showView("help"));
+$("btn-replay-tour").addEventListener("click", () => {
+  showView("main");
+  startTour();
+});
+
+const TOUR_STEPS = [
+  { el: () => $("btn-day-done"), title: "زر اليوم الكامل", text: "قضيت يومًا كاملًا؟ ضغطة واحدة تضيف صلاة لكل فرض من الفروض الخمسة، مع إمكانية التراجع." },
+  { el: () => document.querySelector("#prayer-list .prayer-actions"), title: "عدّادات الصلوات", text: "+١ بعد كل صلاة تقضيها، −١ للتراجع عن ضغطة بالخطأ، و+٥ لإضافة عدد كبير دفعة واحدة." },
+  { el: () => document.querySelector(".tabs"), title: "التبويبات", text: "تابع قضاء الصيام من تبويب «الصيام»، وشاهد هدفك اليومي وسلسلتك 🔥 وتاريخ الانتهاء المتوقع في «الإحصائيات»." },
+  { el: () => $("btn-share"), title: "شارك التطبيق", text: "أرسل رابط التطبيق لأصدقائك من هذا الزر." },
+  { el: () => $("btn-settings"), title: "الإعدادات", text: "عدّل الأعداد دون فقدان ما أنجزته، وحدد هدفك اليومي، واحتفظ بنسخة احتياطية من بياناتك." },
+];
+
+let tourIndex = -1;
+
+function startTour() {
+  if (!state) return;
+  localStorage.setItem("qada-tour-done", "1");
+  showTab("prayers");
+  tourIndex = -1;
+  $("tour").hidden = false;
+  nextTourStep();
+}
+
+function maybeStartTour() {
+  if (localStorage.getItem("qada-tour-done")) return;
+  setTimeout(startTour, 500);
+}
+
+function nextTourStep() {
+  tourIndex++;
+  if (tourIndex >= TOUR_STEPS.length) {
+    $("tour").hidden = true;
+    return;
+  }
+  const step = TOUR_STEPS[tourIndex];
+  const el = step.el();
+  if (!el) { nextTourStep(); return; }
+  el.scrollIntoView({ block: "center" });
+  positionTourStep(el, step);
+}
+
+function positionTourStep(el, step) {
+  const r = el.getBoundingClientRect();
+  const hl = $("tour-highlight");
+  hl.style.top = `${r.top - 6}px`;
+  hl.style.left = `${r.left - 6}px`;
+  hl.style.width = `${r.width + 12}px`;
+  hl.style.height = `${r.height + 12}px`;
+  $("tour-title").textContent = step.title;
+  $("tour-text").textContent = step.text;
+  $("tour-next").textContent = tourIndex === TOUR_STEPS.length - 1 ? "إنهاء" : "التالي";
+  $("tour-dots").innerHTML = TOUR_STEPS
+    .map((_, i) => `<span class="dot${i === tourIndex ? " active" : ""}"></span>`)
+    .join("");
+  const bubble = $("tour-bubble");
+  const bubbleH = bubble.offsetHeight || 160;
+  let top = r.bottom + 14;
+  if (top + bubbleH > window.innerHeight - 10) top = Math.max(10, r.top - bubbleH - 14);
+  bubble.style.top = `${top}px`;
+}
+
+$("tour-next").addEventListener("click", nextTourStep);
+$("tour-skip").addEventListener("click", () => { $("tour").hidden = true; });
+
+window.addEventListener("resize", () => {
+  if (!$("tour").hidden && tourIndex >= 0 && tourIndex < TOUR_STEPS.length) {
+    const step = TOUR_STEPS[tourIndex];
+    const el = step.el();
+    if (el) positionTourStep(el, step);
+  }
 });
 
 /* ═══════════════════ تلميح التثبيت ═══════════════════ */
@@ -797,6 +896,7 @@ if (state) {
   persist(); // تثبيت الترقية من إصدار أقدم فورًا
   buildPrayerCards();
   showView("main");
+  maybeStartTour();
 } else {
   showView("setup");
 }
