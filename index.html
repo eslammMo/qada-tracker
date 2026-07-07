@@ -62,21 +62,92 @@
 
     <!-- ═══════════ الشاشة الرئيسية ═══════════ -->
     <section id="view-main" class="view" hidden>
-      <div class="card overall-card">
-        <div class="overall-ring-wrap">
-          <svg class="overall-ring" viewBox="0 0 100 100" aria-hidden="true">
-            <circle class="ring-bg" cx="50" cy="50" r="42"/>
-            <circle class="ring-fg" id="ring-progress" cx="50" cy="50" r="42"/>
-          </svg>
-          <div class="overall-percent" id="overall-percent">٠٪</div>
+      <div class="tabs" role="tablist">
+        <button id="tab-btn-prayers" class="tab-btn active" role="tab">الصلاة</button>
+        <button id="tab-btn-fasting" class="tab-btn" role="tab">الصيام</button>
+        <button id="tab-btn-stats" class="tab-btn" role="tab">الإحصائيات</button>
+      </div>
+
+      <!-- ─── تبويب الصلاة ─── -->
+      <div id="tab-prayers" class="tab-panel">
+        <div class="card overall-card">
+          <div class="overall-ring-wrap">
+            <svg class="overall-ring" viewBox="0 0 100 100" aria-hidden="true">
+              <circle class="ring-bg" cx="50" cy="50" r="42"/>
+              <circle class="ring-fg" id="ring-progress" cx="50" cy="50" r="42"/>
+            </svg>
+            <div class="overall-percent" id="overall-percent">٠٪</div>
+          </div>
+          <div class="overall-info">
+            <div class="overall-line">أنجزت <strong id="overall-done">٠</strong> صلاة</div>
+            <div class="overall-line muted">المتبقي <strong id="overall-remaining">٠</strong> صلاة</div>
+          </div>
         </div>
-        <div class="overall-info">
-          <div class="overall-line">أنجزت <strong id="overall-done">٠</strong> صلاة</div>
-          <div class="overall-line muted">المتبقي <strong id="overall-remaining">٠</strong> صلاة</div>
+
+        <button id="btn-day-done" class="btn-day-done">✓ أضف يومًا كاملًا <span class="day-done-sub">صلاة واحدة لكل فرض</span></button>
+
+        <div id="prayer-list" class="prayer-list"><!-- بطاقات الصلوات تُبنى من JS --></div>
+
+        <div class="card motivation-card">
+          <p id="motivation-text"></p>
         </div>
       </div>
 
-      <div id="prayer-list" class="prayer-list"><!-- بطاقات الصلوات تُبنى من JS --></div>
+      <!-- ─── تبويب الصيام ─── -->
+      <div id="tab-fasting" class="tab-panel" hidden>
+        <div id="fasting-empty" class="card" hidden>
+          <h2 class="section-title">قضاء الصيام</h2>
+          <p class="hint-text">كم يومًا من الصيام عليك قضاؤه؟</p>
+          <form id="fasting-setup-form" class="row-buttons">
+            <input type="number" id="fasting-days-input" inputmode="numeric" min="1" max="100000" placeholder="عدد الأيام" required>
+            <button type="submit" class="btn-secondary">ابدأ</button>
+          </form>
+        </div>
+
+        <div id="fasting-card" class="card prayer-card fasting-card" hidden>
+          <div class="prayer-top">
+            <span class="prayer-name">أيام الصيام</span>
+            <span class="prayer-count" id="fasting-count"><span class="done-num" id="fasting-done"></span> / <span class="total-num" id="fasting-total"></span></span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="fasting-fill"></div></div>
+          <div class="prayer-actions" id="fasting-actions">
+            <button class="btn-inc" id="fasting-inc" aria-label="إضافة يوم صيام">+١</button>
+            <button class="btn-small" id="fasting-bulk" aria-label="إضافة عدد أيام صيام">+٥</button>
+            <button class="btn-small" id="fasting-dec" aria-label="تراجع عن يوم صيام">−١</button>
+          </div>
+          <div class="prayer-complete-badge" id="fasting-badge" hidden>✓ اكتمل القضاء — تقبّل الله</div>
+        </div>
+      </div>
+
+      <!-- ─── تبويب الإحصائيات ─── -->
+      <div id="tab-stats" class="tab-panel" hidden>
+        <div class="card stats-row-card">
+          <div class="stat-block">
+            <div class="stat-value" id="streak-value">٠</div>
+            <div class="stat-label">🔥 أيام متتالية</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-value" id="today-value">٠</div>
+            <div class="stat-label">صلوات اليوم</div>
+          </div>
+        </div>
+
+        <div class="card" id="goal-card">
+          <h2 class="section-title">هدف اليوم</h2>
+          <p id="goal-status" class="hint-text"></p>
+          <div class="progress-track goal-track"><div class="progress-fill" id="goal-fill"></div></div>
+        </div>
+
+        <div class="card" id="estimate-card">
+          <h2 class="section-title">متوقع الانتهاء</h2>
+          <p id="estimate-text" class="estimate-text"></p>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">آخر ١٤ يومًا</h2>
+          <div id="chart-wrap" class="chart-wrap"></div>
+        </div>
+      </div>
     </section>
 
     <!-- ═══════════ شاشة الإعدادات ═══════════ -->
@@ -88,6 +159,15 @@
         <form id="totals-form">
           <div id="totals-inputs" class="totals-grid"><!-- من JS --></div>
           <button type="submit" class="btn-secondary">حفظ التعديلات</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">الهدف اليومي</h2>
+        <p class="hint-text">عدد صلوات القضاء التي تنوي أداءها كل يوم (٠ = بدون هدف). يُستخدم لحساب تاريخ الانتهاء المتوقع.</p>
+        <form id="goal-form" class="row-buttons">
+          <input type="number" id="goal-input" inputmode="numeric" min="0" max="1000">
+          <button type="submit" class="btn-secondary">حفظ الهدف</button>
         </form>
       </div>
 

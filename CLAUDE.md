@@ -14,15 +14,21 @@ Offline-first PWA (Arabic, RTL) for tracking make-up (qada) prayers. Plain HTML/
 
 ## State model — the critical invariant
 
-Single object in `localStorage` under key `qada-state-v1`:
+Single object in `localStorage` under key `qada-state-v1` (key name kept for compatibility; `version` field is 2):
 
 ```js
-{ version: 1, calendar: "hijri"|"gregorian",
+{ version: 2, calendar: "hijri"|"gregorian",
   totals: {fajr, dhuhr, asr, maghrib, isha},
-  done:   {fajr, dhuhr, asr, maghrib, isha}, updatedAt }
+  done:   {fajr, dhuhr, asr, maghrib, isha},
+  fasting: { total, done },          // قضاء الصيام
+  goal: 5,                           // daily prayer target; 0 = off
+  log: { "YYYY-MM-DD": {p, f} },     // per-day applied increments (prayers/fasting)
+  updatedAt }
 ```
 
-- **Every mutation must go through `update(fn)` in app.js** — it runs the mutator, then `sanitize()` (clamps `0 ≤ done[i] ≤ totals[i]`, coerces ints via `toSafeInt`), then `persist()`, then `renderMain()`. Never write to `state` or `localStorage` directly elsewhere.
+- **Every mutation must go through `update(fn)` in app.js** — it runs the mutator, then `sanitize()` (clamps `0 ≤ done[i] ≤ totals[i]`, same for fasting; coerces ints via `toSafeInt`; drops log entries older than 90 days), then `persist()`, then `renderMain()`. Never write to `state` or `localStorage` directly elsewhere.
+- **Log invariant**: `addDone`/`addFasting`/day-done adjust today's `log` entry by the *applied* delta inside the same `update()` mutator (via `logAdd`), so decrements/undo reduce the day's log and stats never inflate. v1 states migrate in `loadState()` (missing `goal` defaults to 5; `sanitize` fills `fasting`/`log`).
+- Stats (`computeStreak`, `estimateText`, `buildChart`) are pure reads over `log` — rendered lazily when the stats tab opens.
 - Corrupt stored JSON is preserved under a `backup-corrupt-<ts>` key, never silently deleted.
 - User progress (`done`) must survive every feature: recalculation, editing totals, imports. Losing progress is the one unforgivable bug here.
 
