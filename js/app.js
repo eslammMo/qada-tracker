@@ -121,16 +121,17 @@ function updateLeapNote() {
     el.hidden = true;
     return;
   }
-  const extraDays = Math.floor(years / 4);
+  // أقصى عدد سنوات كبيسة يمكن أن تقع داخل N سنة متتالية = ceil(N / 4)
+  const maxExtraDays = Math.ceil(years / 4);
   const daysWord =
-    extraDays === 1 ? "يوم واحد" :
-    extraDays === 2 ? "يومين" :
-    extraDays <= 10 ? `${num(extraDays)} أيام` :
-    `${num(extraDays)} يومًا`;
+    maxExtraDays === 1 ? "يوم واحد" :
+    maxExtraDays === 2 ? "يومين" :
+    maxExtraDays <= 10 ? `${num(maxExtraDays)} أيام` :
+    `${num(maxExtraDays)} يومًا`;
   el.hidden = false;
-  el.textContent = extraDays > 0
-    ? `⚠️ ملاحظة: كل ٤ سنوات ميلادية تقريبًا فيها سنة كبيسة (٣٦٦ يومًا). لمدة ${num(years)} سنة قد تحتاج إضافة نحو ${daysWord} في خانة الأيام.`
-    : "⚠️ ملاحظة: كل ٤ سنوات ميلادية تقريبًا فيها سنة كبيسة (٣٦٦ يومًا)، فقد تحتاج إضافة يوم لكل ٤ سنوات في خانة الأيام.";
+  el.textContent = maxExtraDays > 0
+    ? `⚠️ ملاحظة: بعض السنوات الميلادية كبيسة (٣٦٦ يومًا). لمدة ${num(years)} سنة قد تحتاج إضافة حتى ${daysWord} في خانة الأيام — مع ملحوظة أن هذا أقصى عدد أيام ممكن أن يكون إضافيًا.`
+    : "⚠️ ملاحظة: بعض السنوات الميلادية كبيسة (٣٦٦ يومًا)، فقد تحتاج إضافة يوم عن كل سنة كبيسة مرّت خلال المدة.";
 }
 
 function updateSetupPreview() {
