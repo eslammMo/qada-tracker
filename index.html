@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="description" content="تطبيق لمتابعة قضاء الصلوات الفائتة — يعمل بدون إنترنت">
+  <title>قضاء الصلوات</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="قضاء الصلوات">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <h1 class="app-title">🕌 قضاء الصلوات</h1>
+    <button id="btn-settings" class="icon-btn" aria-label="الإعدادات" hidden>⚙️</button>
+    <button id="btn-back" class="icon-btn" aria-label="رجوع" hidden>←</button>
+  </header>
+
+  <main id="app">
+
+    <!-- ═══════════ شاشة الإعداد ═══════════ -->
+    <section id="view-setup" class="view" hidden>
+      <div class="card intro-card">
+        <p class="intro-text">أدخل المدة التي فاتتك فيها الصلاة، وسيحسب التطبيق عدد الصلوات المطلوب قضاؤها.</p>
+      </div>
+
+      <form id="setup-form" class="card">
+        <div class="inputs-row">
+          <label class="field">
+            <span>سنوات</span>
+            <input type="number" id="in-years" inputmode="numeric" min="0" max="99" value="0">
+          </label>
+          <label class="field">
+            <span>شهور</span>
+            <input type="number" id="in-months" inputmode="numeric" min="0" max="120" value="0">
+          </label>
+          <label class="field">
+            <span>أيام</span>
+            <input type="number" id="in-days" inputmode="numeric" min="0" max="1000" value="0">
+          </label>
+        </div>
+
+        <fieldset class="calendar-toggle">
+          <legend>نوع السنة</legend>
+          <label><input type="radio" name="calendar" value="hijri" checked> هجرية (٣٥٤ يوم)</label>
+          <label><input type="radio" name="calendar" value="gregorian"> ميلادية (٣٦٥ يوم)</label>
+        </fieldset>
+
+        <p id="setup-preview" class="preview-text" hidden></p>
+
+        <button type="submit" class="btn-primary">احسب وابدأ</button>
+      </form>
+    </section>
+
+    <!-- ═══════════ الشاشة الرئيسية ═══════════ -->
+    <section id="view-main" class="view" hidden>
+      <div class="card overall-card">
+        <div class="overall-ring-wrap">
+          <svg class="overall-ring" viewBox="0 0 100 100" aria-hidden="true">
+            <circle class="ring-bg" cx="50" cy="50" r="42"/>
+            <circle class="ring-fg" id="ring-progress" cx="50" cy="50" r="42"/>
+          </svg>
+          <div class="overall-percent" id="overall-percent">٠٪</div>
+        </div>
+        <div class="overall-info">
+          <div class="overall-line">أنجزت <strong id="overall-done">٠</strong> صلاة</div>
+          <div class="overall-line muted">المتبقي <strong id="overall-remaining">٠</strong> صلاة</div>
+        </div>
+      </div>
+
+      <div id="prayer-list" class="prayer-list"><!-- بطاقات الصلوات تُبنى من JS --></div>
+    </section>
+
+    <!-- ═══════════ شاشة الإعدادات ═══════════ -->
+    <section id="view-settings" class="view" hidden>
+
+      <div class="card">
+        <h2 class="section-title">تعديل العدد الإجمالي</h2>
+        <p class="hint-text">عدّل العدد المطلوب لكل صلاة — ما أنجزته يبقى محفوظًا.</p>
+        <form id="totals-form">
+          <div id="totals-inputs" class="totals-grid"><!-- من JS --></div>
+          <button type="submit" class="btn-secondary">حفظ التعديلات</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">إعادة الحساب من جديد</h2>
+        <p class="hint-text">إدخال مدة جديدة يستبدل الأعداد المطلوبة، مع الحفاظ على ما أنجزته.</p>
+        <button id="btn-recalc" class="btn-secondary">إعادة الحساب بمدة جديدة</button>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">نسخة احتياطية</h2>
+        <div class="row-buttons">
+          <button id="btn-export" class="btn-secondary">تصدير البيانات</button>
+          <button id="btn-import" class="btn-secondary">استيراد البيانات</button>
+          <input type="file" id="import-file" accept="application/json,.json" hidden>
+        </div>
+      </div>
+
+      <div class="card danger-card">
+        <h2 class="section-title">إعادة التعيين الكامل</h2>
+        <p class="hint-text">يمسح كل شيء: الأعداد المطلوبة وما أنجزته. اكتب «نعم» للتأكيد.</p>
+        <div class="row-buttons">
+          <input type="text" id="reset-confirm" placeholder="اكتب: نعم" autocomplete="off">
+          <button id="btn-reset" class="btn-danger">إعادة تعيين</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- نافذة الإضافة المخصصة -->
+  <dialog id="bulk-dialog">
+    <form method="dialog" id="bulk-form">
+      <h2 id="bulk-title" class="section-title">إضافة عدد</h2>
+      <input type="number" id="bulk-count" inputmode="numeric" min="1" max="100000" placeholder="العدد" required>
+      <div class="row-buttons">
+        <button value="cancel" formnovalidate class="btn-secondary">إلغاء</button>
+        <button value="ok" class="btn-primary">إضافة</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden>
+    <span id="toast-text"></span>
+    <button id="toast-undo" class="toast-undo" hidden>تراجع</button>
+  </div>
+
+  <div id="install-hint" class="install-hint" hidden>
+    <span id="install-hint-text"></span>
+    <button id="install-hint-close" class="icon-btn" aria-label="إغلاق">✕</button>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

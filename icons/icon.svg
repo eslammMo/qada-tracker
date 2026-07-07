@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0f766e"/>
+  <!-- قبة المسجد -->
+  <path d="M256 96c-6 34-38 58-70 82-34 26-58 62-58 106v20h256v-20c0-44-24-80-58-106-32-24-64-48-70-82z" fill="#ffffff"/>
+  <!-- الهلال -->
+  <circle cx="256" cy="74" r="18" fill="none" stroke="#ffffff" stroke-width="10"/>
+  <!-- القاعدة -->
+  <rect x="104" y="320" width="304" height="36" rx="12" fill="#ffffff"/>
+  <!-- علامة العدّ -->
+  <g stroke="#ccfbf1" stroke-width="16" stroke-linecap="round">
+    <line x1="176" y1="396" x2="176" y2="452"/>
+    <line x1="216" y1="396" x2="216" y2="452"/>
+    <line x1="256" y1="396" x2="256" y2="452"/>
+    <line x1="296" y1="396" x2="296" y2="452"/>
+    <line x1="352" y1="388" x2="240" y2="460"/>
+  </g>
+</svg>
