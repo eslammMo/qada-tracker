@@ -20,8 +20,9 @@
   --c-fasting: #047857;
 }
 
+/* الوضع الداكن: تلقائي مع النظام ما لم يختر المستخدم يدويًا (data-theme) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #101817;
     --card: #1a2422;
     --text: #e6efec;
@@ -40,6 +41,25 @@
     --c-isha: #60a5fa;
     --c-fasting: #34d399;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #101817;
+  --card: #1a2422;
+  --text: #e6efec;
+  --muted: #8ba39d;
+  --accent: #2dd4bf;
+  --accent-soft: #134e4a;
+  --border: #2a3835;
+  --danger: #f87171;
+  --danger-soft: #450a0a;
+  --shadow: 0 1px 3px rgba(0, 0, 0, .4);
+
+  --c-fajr: #a78bfa;
+  --c-dhuhr: #fbbf24;
+  --c-asr: #22d3ee;
+  --c-maghrib: #f87171;
+  --c-isha: #60a5fa;
+  --c-fasting: #34d399;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -141,7 +161,8 @@ input { touch-action: manipulation; }
   font-weight: 700;
   transition: transform .08s;
 }
-@media (prefers-color-scheme: dark) { .btn-primary { color: #06302c; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn-primary { color: #06302c; } }
+:root[data-theme="dark"] .btn-primary { color: #06302c; }
 .btn-primary:active { transform: scale(.97); }
 
 .btn-secondary {
@@ -175,7 +196,7 @@ input { touch-action: manipulation; }
 
 .field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; font-size: .9rem; font-weight: 600; }
 
-input[type="number"], input[type="text"] {
+input[type="number"], input[type="text"], input[type="time"] {
   width: 100%;
   min-height: 48px;
   padding: 8px 12px;
@@ -244,7 +265,8 @@ input:focus { outline: 2px solid var(--accent); border-color: transparent; }
   background: var(--accent);
   color: #fff;
 }
-@media (prefers-color-scheme: dark) { .tab-btn.active { color: #06302c; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tab-btn.active { color: #06302c; } }
+:root[data-theme="dark"] .tab-btn.active { color: #06302c; }
 
 .tab-panel { display: flex; flex-direction: column; gap: 14px; }
 .tab-panel[hidden] { display: none; }
@@ -267,7 +289,8 @@ input:focus { outline: 2px solid var(--accent); border-color: transparent; }
   box-shadow: var(--shadow);
   transition: transform .08s;
 }
-@media (prefers-color-scheme: dark) { .btn-day-done { color: #06302c; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn-day-done { color: #06302c; } }
+:root[data-theme="dark"] .btn-day-done { color: #06302c; }
 .btn-day-done:active { transform: scale(.97); }
 .btn-day-done:disabled { opacity: .4; }
 .day-done-sub { font-size: .75rem; font-weight: 600; opacity: .85; }
@@ -320,7 +343,7 @@ input:focus { outline: 2px solid var(--accent); border-color: transparent; }
 .chart-value { font-size: 10px; font-weight: 700; fill: var(--text); }
 
 /* ═══════════ الصيام ═══════════ */
-.fasting-card { border-right-color: var(--c-fasting); }
+.fasting-card { border-inline-start-color: var(--c-fasting); }
 .fasting-card .prayer-name { color: var(--c-fasting); }
 .fasting-card .done-num { color: var(--c-fasting); }
 .fasting-card .btn-inc { background: var(--c-fasting); }
@@ -357,7 +380,11 @@ input:focus { outline: 2px solid var(--accent); border-color: transparent; }
 /* ═══════════ بطاقات الصلوات ═══════════ */
 .prayer-list { display: flex; flex-direction: column; gap: 12px; }
 
-.prayer-card { border-right: 5px solid var(--p-color, var(--accent)); }
+.prayer-card { border-inline-start: 5px solid var(--p-color, var(--accent)); }
+
+/* عكس سهم الرجوع وأيقونة المشاركة في اتجاه LTR */
+[dir="ltr"] .btn-back-arrow { transform: scaleX(-1); }
+[dir="ltr"] .share-flip svg { transform: scaleX(1); }
 
 .prayer-top {
   display: flex;
@@ -482,7 +509,8 @@ dialog::backdrop { background: rgba(0, 0, 0, .45); }
   font-size: .95rem;
   min-height: 32px;
 }
-@media (prefers-color-scheme: dark) { .toast-undo { color: #0f766e; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .toast-undo { color: #0f766e; } }
+:root[data-theme="dark"] .toast-undo { color: #0f766e; }
 
 .update-banner {
   position: fixed;
@@ -584,6 +612,47 @@ dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .tour-bubble .tour-next { width: auto; min-height: 44px; padding: 0 20px; font-size: .95rem; }
 
 #btn-replay-tour { align-self: center; }
+
+/* ═══════════ الأوسمة ═══════════ */
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 10px;
+}
+.badge-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  opacity: .35;
+  filter: grayscale(1);
+  text-align: center;
+}
+.badge-item.earned {
+  opacity: 1;
+  filter: none;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.badge-emoji { font-size: 1.6rem; }
+.badge-name { font-size: .72rem; font-weight: 700; color: var(--text); }
+
+.milestone-dialog {
+  text-align: center;
+  padding: 28px 24px 22px;
+}
+.milestone-emoji { font-size: 3.2rem; margin-bottom: 8px; animation: bump .6s ease; }
+.milestone-dialog .section-title { color: var(--accent); }
+.milestone-name { font-size: 1.05rem; font-weight: 700; margin: 4px 0 18px; }
+.milestone-dialog .btn-primary { min-height: 48px; }
+
+/* ═══════════ اختيارات الإعدادات ═══════════ */
+.pref-tabs { border: 1px solid var(--border); }
+#reminder-time { flex: 1; min-width: 110px; }
+.btn-danger-outline { color: var(--danger); border-color: var(--danger); }
 
 /* حجز مساحة أسفل التطبيق عندما يكون شريط التثبيت ظاهرًا حتى لا يغطي المحتوى */
 body.has-install-hint #app { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }

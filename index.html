@@ -12,26 +12,37 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="قضاء الصلوات">
+  <script>
+    // تطبيق المظهر واللغة قبل أول رسم لتجنب الوميض
+    (function () {
+      var th = localStorage.getItem("qada-theme");
+      if (th === "light" || th === "dark") document.documentElement.dataset.theme = th;
+      if (localStorage.getItem("qada-lang") === "en") {
+        document.documentElement.lang = "en";
+        document.documentElement.dir = "ltr";
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
   <header class="app-header">
-    <h1 class="app-title">🕌 قضاء الصلوات</h1>
+    <h1 class="app-title" data-i18n="app.title">🕌 قضاء الصلوات</h1>
     <div class="header-actions">
-      <button id="btn-install-icon" class="icon-btn" aria-label="تثبيت التطبيق" title="تثبيت التطبيق" hidden>
+      <button id="btn-install-icon" class="icon-btn" aria-label="تثبيت التطبيق" title="تثبيت التطبيق" data-i18n-title="tip.install" hidden>
         <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
           <path d="M12 3a1 1 0 0 1 1 1v8.6l2.8-2.8a1 1 0 1 1 1.4 1.4l-4.5 4.5a1 1 0 0 1-1.4 0L6.8 11.2a1 1 0 1 1 1.4-1.4L11 12.6V4a1 1 0 0 1 1-1zM5 18a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1z"/>
         </svg>
       </button>
-      <button id="btn-share" class="icon-btn" aria-label="مشاركة التطبيق" title="مشاركة التطبيق">
+      <button id="btn-share" class="icon-btn share-flip" aria-label="مشاركة التطبيق" title="مشاركة التطبيق" data-i18n-title="tip.share">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
           <path d="M13.12 17.02c-4.55 0-7.6 1.24-9.93 4.2-.34.43-1.02.15-.96-.4C2.9 14.7 6.79 10.42 13.12 9.85V5.44c0-.5.6-.76 .96-.41l7.76 7.42c.23.22.23.58 0 .8l-7.76 7.42c-.36.35-.96.09-.96-.41v-3.24z"/>
         </svg>
       </button>
-      <button id="btn-help" class="icon-btn btn-help" aria-label="مساعدة" title="مساعدة" hidden>؟</button>
-      <button id="btn-settings" class="icon-btn" aria-label="الإعدادات" title="الإعدادات" hidden>⚙️</button>
-      <button id="btn-back" class="icon-btn" aria-label="رجوع" title="رجوع" hidden>←</button>
+      <button id="btn-help" class="icon-btn btn-help" aria-label="مساعدة" title="مساعدة" data-i18n-title="tip.help" hidden>؟</button>
+      <button id="btn-settings" class="icon-btn" aria-label="الإعدادات" title="الإعدادات" data-i18n-title="tip.settings" hidden>⚙️</button>
+      <button id="btn-back" class="icon-btn btn-back-arrow" aria-label="رجوع" title="رجوع" data-i18n-title="tip.back" hidden>←</button>
     </div>
   </header>
 
@@ -40,54 +51,54 @@
     <!-- ═══════════ شاشة الإعداد ═══════════ -->
     <section id="view-setup" class="view" hidden>
       <div class="card intro-card">
-        <p class="intro-text">أدخل المدة التي فاتتك فيها الصلاة، وسيحسب التطبيق عدد الصلوات المطلوب قضاؤها.</p>
+        <p class="intro-text" data-i18n="setup.intro"></p>
       </div>
 
       <form id="setup-form" class="card">
         <div class="inputs-row">
           <label class="field">
-            <span>سنوات</span>
+            <span data-i18n="setup.years">سنوات</span>
             <input type="number" id="in-years" inputmode="numeric" min="0" max="99" value="0">
           </label>
           <label class="field">
-            <span>شهور</span>
+            <span data-i18n="setup.months">شهور</span>
             <input type="number" id="in-months" inputmode="numeric" min="0" max="120" value="0">
           </label>
           <label class="field">
-            <span>أيام</span>
+            <span data-i18n="setup.days">أيام</span>
             <input type="number" id="in-days" inputmode="numeric" min="0" max="1000" value="0">
           </label>
         </div>
 
         <fieldset class="calendar-toggle">
-          <legend>نوع السنة</legend>
-          <label><input type="radio" name="calendar" value="hijri" checked> هجرية (٣٥٤ يوم)</label>
-          <label><input type="radio" name="calendar" value="gregorian"> ميلادية (٣٦٥ يوم)</label>
+          <legend data-i18n="setup.calendarLegend">نوع السنة</legend>
+          <label><input type="radio" name="calendar" value="hijri" checked> <span data-i18n="setup.hijri"></span></label>
+          <label><input type="radio" name="calendar" value="gregorian"> <span data-i18n="setup.greg"></span></label>
         </fieldset>
 
         <p id="leap-note" class="leap-note" hidden></p>
 
         <p id="setup-preview" class="preview-text" hidden></p>
 
-        <button type="submit" class="btn-primary">احسب وابدأ</button>
+        <button type="submit" class="btn-primary" data-i18n="setup.calc">احسب وابدأ</button>
       </form>
     </section>
 
     <!-- ═══════════ الشاشة الرئيسية ═══════════ -->
     <section id="view-main" class="view" hidden>
       <div class="tabs" role="tablist">
-        <button id="tab-btn-prayers" class="tab-btn active" role="tab">الصلاة</button>
-        <button id="tab-btn-fasting" class="tab-btn" role="tab">الصيام</button>
-        <button id="tab-btn-stats" class="tab-btn" role="tab">الإحصائيات</button>
+        <button id="tab-btn-prayers" class="tab-btn active" role="tab" data-i18n="tabs.prayers">الصلاة</button>
+        <button id="tab-btn-fasting" class="tab-btn" role="tab" data-i18n="tabs.fasting">الصيام</button>
+        <button id="tab-btn-stats" class="tab-btn" role="tab" data-i18n="tabs.stats">الإحصائيات</button>
       </div>
 
       <!-- ─── تبويب الصلاة ─── -->
       <div id="tab-prayers" class="tab-panel">
         <div id="install-card" class="card install-card" hidden>
-          <button id="install-card-close" class="icon-btn install-card-close" aria-label="إغلاق" title="إغلاق">✕</button>
-          <h2 class="section-title">⬇️ ثبّت التطبيق على جهازك</h2>
-          <p class="hint-text">أيقونة على شاشتك الرئيسية، ويعمل بدون إنترنت كتطبيق حقيقي.</p>
-          <button id="btn-install" class="btn-primary" title="تثبيت التطبيق">التثبيت الآن</button>
+          <button id="install-card-close" class="icon-btn install-card-close" aria-label="إغلاق" title="إغلاق" data-i18n-title="tip.close">✕</button>
+          <h2 class="section-title" data-i18n="install.cardTitle"></h2>
+          <p class="hint-text" data-i18n="install.cardHint"></p>
+          <button id="btn-install" class="btn-primary" title="تثبيت التطبيق" data-i18n="install.now" data-i18n-title="tip.install"></button>
         </div>
 
         <div class="card overall-card">
@@ -99,12 +110,12 @@
             <div class="overall-percent" id="overall-percent">٠٪</div>
           </div>
           <div class="overall-info">
-            <div class="overall-line">أنجزت <strong id="overall-done">٠</strong> صلاة</div>
-            <div class="overall-line muted">المتبقي <strong id="overall-remaining">٠</strong> صلاة</div>
+            <div class="overall-line"><span data-i18n="overall.donePre">أنجزت</span> <strong id="overall-done">٠</strong> <span data-i18n="overall.doneSuf">صلاة</span></div>
+            <div class="overall-line muted"><span data-i18n="overall.remPre">المتبقي</span> <strong id="overall-remaining">٠</strong> <span data-i18n="overall.remSuf">صلاة</span></div>
           </div>
         </div>
 
-        <button id="btn-day-done" class="btn-day-done">✓ أضف يومًا كاملًا <span class="day-done-sub">صلاة واحدة لكل فرض</span></button>
+        <button id="btn-day-done" class="btn-day-done"><span data-i18n="dayDone.btn">✓ أضف يومًا كاملًا</span> <span class="day-done-sub" data-i18n="dayDone.sub">صلاة واحدة لكل فرض</span></button>
 
         <div id="prayer-list" class="prayer-list"><!-- بطاقات الصلوات تُبنى من JS --></div>
 
@@ -116,26 +127,26 @@
       <!-- ─── تبويب الصيام ─── -->
       <div id="tab-fasting" class="tab-panel" hidden>
         <div id="fasting-empty" class="card" hidden>
-          <h2 class="section-title">قضاء الصيام</h2>
-          <p class="hint-text">كم يومًا من الصيام عليك قضاؤه؟</p>
+          <h2 class="section-title" data-i18n="fasting.emptyTitle"></h2>
+          <p class="hint-text" data-i18n="fasting.emptyHint"></p>
           <form id="fasting-setup-form" class="row-buttons">
-            <input type="number" id="fasting-days-input" inputmode="numeric" min="1" max="100000" placeholder="عدد الأيام" required>
-            <button type="submit" class="btn-secondary">ابدأ</button>
+            <input type="number" id="fasting-days-input" inputmode="numeric" min="1" max="100000" data-i18n-placeholder="fasting.placeholder" required>
+            <button type="submit" class="btn-secondary" data-i18n="fasting.start"></button>
           </form>
         </div>
 
         <div id="fasting-card" class="card prayer-card fasting-card" hidden>
           <div class="prayer-top">
-            <span class="prayer-name">أيام الصيام</span>
+            <span class="prayer-name" data-i18n="prayer.fastingName">أيام الصيام</span>
             <span class="prayer-count" id="fasting-count"><span class="done-num" id="fasting-done"></span> / <span class="total-num" id="fasting-total"></span></span>
           </div>
           <div class="progress-track"><div class="progress-fill" id="fasting-fill"></div></div>
           <div class="prayer-actions" id="fasting-actions">
-            <button class="btn-inc" id="fasting-inc" aria-label="إضافة يوم صيام">+١</button>
-            <button class="btn-small" id="fasting-bulk" aria-label="إضافة عدد أيام صيام">+٥</button>
-            <button class="btn-small" id="fasting-dec" aria-label="تراجع عن يوم صيام">−١</button>
+            <button class="btn-inc" id="fasting-inc" data-i18n="btn.inc">+١</button>
+            <button class="btn-small" id="fasting-bulk" data-i18n="btn.bulk">+٥</button>
+            <button class="btn-small" id="fasting-dec" data-i18n="btn.dec">−١</button>
           </div>
-          <div class="prayer-complete-badge" id="fasting-badge" hidden>✓ اكتمل القضاء — تقبّل الله</div>
+          <div class="prayer-complete-badge" id="fasting-badge" data-i18n="card.complete" hidden></div>
         </div>
       </div>
 
@@ -144,27 +155,32 @@
         <div class="card stats-row-card">
           <div class="stat-block">
             <div class="stat-value" id="streak-value">٠</div>
-            <div class="stat-label">🔥 أيام متتالية</div>
+            <div class="stat-label" data-i18n="stats.streak">🔥 أيام متتالية</div>
           </div>
           <div class="stat-block">
             <div class="stat-value" id="today-value">٠</div>
-            <div class="stat-label">صلوات اليوم</div>
+            <div class="stat-label" data-i18n="stats.today">صلوات اليوم</div>
           </div>
         </div>
 
         <div class="card" id="goal-card">
-          <h2 class="section-title">هدف اليوم</h2>
+          <h2 class="section-title" data-i18n="stats.goalTitle"></h2>
           <p id="goal-status" class="hint-text"></p>
           <div class="progress-track goal-track"><div class="progress-fill" id="goal-fill"></div></div>
         </div>
 
         <div class="card" id="estimate-card">
-          <h2 class="section-title">متوقع الانتهاء</h2>
+          <h2 class="section-title" data-i18n="stats.estimateTitle"></h2>
           <p id="estimate-text" class="estimate-text"></p>
         </div>
 
         <div class="card">
-          <h2 class="section-title">آخر ١٤ يومًا</h2>
+          <h2 class="section-title" data-i18n="stats.badgesTitle"></h2>
+          <div id="badges-grid" class="badges-grid"><!-- من JS --></div>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title" data-i18n="stats.chartTitle"></h2>
           <div id="chart-wrap" class="chart-wrap"></div>
         </div>
       </div>
@@ -174,83 +190,85 @@
     <section id="view-settings" class="view" hidden>
 
       <div class="card">
-        <h2 class="section-title">تعديل العدد الإجمالي</h2>
-        <p class="hint-text">عدّل العدد المطلوب لكل صلاة — ما أنجزته يبقى محفوظًا.</p>
+        <h2 class="section-title" data-i18n="settings.totalsTitle"></h2>
+        <p class="hint-text" data-i18n="settings.totalsHint"></p>
         <form id="totals-form">
           <div id="totals-inputs" class="totals-grid"><!-- من JS --></div>
-          <button type="submit" class="btn-secondary">حفظ التعديلات</button>
+          <button type="submit" class="btn-secondary" data-i18n="settings.save"></button>
         </form>
       </div>
 
       <div class="card">
-        <h2 class="section-title">الهدف اليومي</h2>
-        <p class="hint-text">عدد صلوات القضاء التي تنوي أداءها كل يوم (٠ = بدون هدف). يُستخدم لحساب تاريخ الانتهاء المتوقع.</p>
+        <h2 class="section-title" data-i18n="settings.goalTitle"></h2>
+        <p class="hint-text" data-i18n="settings.goalHint"></p>
         <form id="goal-form" class="row-buttons">
           <input type="number" id="goal-input" inputmode="numeric" min="0" max="1000">
-          <button type="submit" class="btn-secondary">حفظ الهدف</button>
+          <button type="submit" class="btn-secondary" data-i18n="settings.goalSave"></button>
         </form>
       </div>
 
       <div class="card">
-        <h2 class="section-title">إعادة الحساب من جديد</h2>
-        <p class="hint-text">إدخال مدة جديدة يستبدل الأعداد المطلوبة، مع الحفاظ على ما أنجزته.</p>
-        <button id="btn-recalc" class="btn-secondary">إعادة الحساب بمدة جديدة</button>
+        <h2 class="section-title" data-i18n="settings.themeTitle"></h2>
+        <div class="tabs pref-tabs" id="theme-tabs">
+          <button class="tab-btn" data-theme-choice="system" data-i18n="settings.themeSystem"></button>
+          <button class="tab-btn" data-theme-choice="light" data-i18n="settings.themeLight"></button>
+          <button class="tab-btn" data-theme-choice="dark" data-i18n="settings.themeDark"></button>
+        </div>
       </div>
 
       <div class="card">
-        <h2 class="section-title">نسخة احتياطية</h2>
+        <h2 class="section-title" data-i18n="settings.langTitle"></h2>
+        <div class="tabs pref-tabs" id="lang-tabs">
+          <button class="tab-btn" data-lang-choice="ar">العربية</button>
+          <button class="tab-btn" data-lang-choice="en">English</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title" data-i18n="settings.reminderTitle"></h2>
+        <p class="hint-text" data-i18n="settings.reminderHint"></p>
         <div class="row-buttons">
-          <button id="btn-export" class="btn-secondary">تصدير البيانات</button>
-          <button id="btn-import" class="btn-secondary">استيراد البيانات</button>
+          <input type="time" id="reminder-time" value="20:00">
+          <button id="btn-reminder" class="btn-secondary" data-i18n="settings.reminderEnable"></button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title" data-i18n="settings.recalcTitle"></h2>
+        <p class="hint-text" data-i18n="settings.recalcHint"></p>
+        <button id="btn-recalc" class="btn-secondary" data-i18n="settings.recalcBtn"></button>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title" data-i18n="settings.backupTitle"></h2>
+        <div class="row-buttons">
+          <button id="btn-export" class="btn-secondary" data-i18n="settings.export"></button>
+          <button id="btn-import" class="btn-secondary" data-i18n="settings.import"></button>
           <input type="file" id="import-file" accept="application/json,.json" hidden>
         </div>
       </div>
 
       <div class="card danger-card">
-        <h2 class="section-title">إعادة التعيين الكامل</h2>
-        <p class="hint-text">يمسح كل شيء: الأعداد المطلوبة وما أنجزته. اكتب «نعم» للتأكيد.</p>
+        <h2 class="section-title" data-i18n="settings.resetTitle"></h2>
+        <p class="hint-text" data-i18n="settings.resetHint"></p>
         <div class="row-buttons">
-          <input type="text" id="reset-confirm" placeholder="اكتب: نعم" autocomplete="off">
-          <button id="btn-reset" class="btn-danger">إعادة تعيين</button>
+          <input type="text" id="reset-confirm" data-i18n-placeholder="settings.resetPlaceholder" autocomplete="off">
+          <button id="btn-reset" class="btn-danger" data-i18n="settings.resetBtn"></button>
         </div>
       </div>
     </section>
 
     <!-- ═══════════ شاشة المساعدة ═══════════ -->
     <section id="view-help" class="view" hidden>
-      <div class="card">
-        <h2 class="section-title">🧮 حساب القضاء</h2>
-        <p class="hint-text">أدخل المدة التي فاتتك (سنوات/شهور/أيام) بالتقويم الهجري أو الميلادي، ويحسب التطبيق عدد الصلوات المطلوبة لكل فرض. يمكنك إعادة الحساب لاحقًا من الإعدادات <strong>دون فقدان ما أنجزته</strong>.</p>
-      </div>
-      <div class="card">
-        <h2 class="section-title">🕌 عدّادات الصلوات</h2>
-        <p class="hint-text">اضغط <strong>+١</strong> بعد كل صلاة تقضيها، و<strong>−١</strong> للتراجع عن ضغطة بالخطأ، و<strong>+٥</strong> لإضافة عدد كبير دفعة واحدة (مع زر تراجع في الرسالة). عند اكتمال فرض تظهر علامة ✓ ويُقفل عدّاده.</p>
-      </div>
-      <div class="card">
-        <h2 class="section-title">✓ زر اليوم الكامل</h2>
-        <p class="hint-text">قضيت يومًا كاملًا مع صلوات يومك؟ ضغطة واحدة تضيف صلاة لكل فرض من الفروض الخمسة، مع إمكانية التراجع.</p>
-      </div>
-      <div class="card">
-        <h2 class="section-title">🌙 قضاء الصيام</h2>
-        <p class="hint-text">من تبويب «الصيام» أدخل عدد الأيام التي عليك قضاؤها، وسجّل كل يوم تصومه بنفس طريقة عدّادات الصلوات.</p>
-      </div>
-      <div class="card">
-        <h2 class="section-title">📊 الإحصائيات</h2>
-        <p class="hint-text">تبويب «الإحصائيات» يعرض: هدفك اليومي وتقدمك فيه، سلسلة الأيام المتتالية 🔥، التاريخ المتوقع لإنهاء القضاء (هجري وميلادي)، ومخطط آخر ١٤ يومًا. حدد هدفك اليومي من الإعدادات.</p>
-      </div>
-      <div class="card">
-        <h2 class="section-title">⚙️ الإعدادات</h2>
-        <p class="hint-text">تعديل الأعداد المطلوبة <strong>يحافظ دائمًا على ما أنجزته</strong>. من هناك أيضًا: الهدف اليومي، تصدير نسخة احتياطية من بياناتك واستيرادها، وإعادة التعيين الكامل.</p>
-      </div>
-      <div class="card">
-        <h2 class="section-title">📲 التثبيت والعمل بدون إنترنت</h2>
-        <p class="hint-text">ثبّت التطبيق من زر التثبيت في الشريط العلوي ليظهر بأيقونة على شاشتك الرئيسية ويعمل بدون إنترنت تمامًا. بياناتك محفوظة على جهازك فقط.</p>
-      </div>
-      <div class="card">
-        <h2 class="section-title">🔗 المشاركة</h2>
-        <p class="hint-text">زر المشاركة في الشريط العلوي يرسل رابط التطبيق لأصدقائك عبر واتساب أو غيره.</p>
-      </div>
-      <button id="btn-replay-tour" class="btn-secondary">▶ إعادة عرض الجولة التعريفية</button>
+      <div class="card"><h2 class="section-title" data-i18n="help.calc.t"></h2><p class="hint-text" data-i18n="help.calc.b"></p></div>
+      <div class="card"><h2 class="section-title" data-i18n="help.counters.t"></h2><p class="hint-text" data-i18n="help.counters.b"></p></div>
+      <div class="card"><h2 class="section-title" data-i18n="help.dayDone.t"></h2><p class="hint-text" data-i18n="help.dayDone.b"></p></div>
+      <div class="card"><h2 class="section-title" data-i18n="help.fasting.t"></h2><p class="hint-text" data-i18n="help.fasting.b"></p></div>
+      <div class="card"><h2 class="section-title" data-i18n="help.stats.t"></h2><p class="hint-text" data-i18n="help.stats.b"></p></div>
+      <div class="card"><h2 class="section-title" data-i18n="help.settings.t"></h2><p class="hint-text" data-i18n="help.settings.b"></p></div>
+      <div class="card"><h2 class="section-title" data-i18n="help.install.t"></h2><p class="hint-text" data-i18n="help.install.b"></p></div>
+      <div class="card"><h2 class="section-title" data-i18n="help.share.t"></h2><p class="hint-text" data-i18n="help.share.b"></p></div>
+      <button id="btn-replay-tour" class="btn-secondary" data-i18n="help.replay"></button>
     </section>
   </main>
 
@@ -263,8 +281,8 @@
       <div class="tour-footer">
         <div id="tour-dots" class="tour-dots"></div>
         <div class="tour-btns">
-          <button id="tour-skip" class="tour-skip">تخطي</button>
-          <button id="tour-next" class="btn-primary tour-next">التالي</button>
+          <button id="tour-skip" class="tour-skip" data-i18n="tour.skip"></button>
+          <button id="tour-next" class="btn-primary tour-next" data-i18n="tour.next"></button>
         </div>
       </div>
     </div>
@@ -273,33 +291,44 @@
   <!-- نافذة الإضافة المخصصة -->
   <dialog id="bulk-dialog">
     <form method="dialog" id="bulk-form">
-      <h2 id="bulk-title" class="section-title">إضافة عدد</h2>
-      <input type="number" id="bulk-count" inputmode="numeric" min="1" max="100000" placeholder="العدد" required>
+      <h2 id="bulk-title" class="section-title"></h2>
+      <input type="number" id="bulk-count" inputmode="numeric" min="1" max="100000" data-i18n-placeholder="bulk.placeholder" required>
       <div class="row-buttons">
-        <button value="cancel" formnovalidate class="btn-secondary">إلغاء</button>
-        <button value="ok" class="btn-primary">إضافة</button>
+        <button value="cancel" formnovalidate class="btn-secondary" data-i18n="bulk.cancel"></button>
+        <button value="ok" class="btn-primary" data-i18n="bulk.add"></button>
       </div>
+    </form>
+  </dialog>
+
+  <!-- نافذة الوسام الجديد -->
+  <dialog id="milestone-dialog" class="milestone-dialog">
+    <div class="milestone-emoji" id="milestone-emoji">🏅</div>
+    <h2 class="section-title" data-i18n="milestone.title"></h2>
+    <p id="milestone-name" class="milestone-name"></p>
+    <form method="dialog">
+      <button value="ok" class="btn-primary" data-i18n="milestone.continue"></button>
     </form>
   </dialog>
 
   <div id="toast" class="toast" hidden>
     <span id="toast-text"></span>
-    <button id="toast-undo" class="toast-undo" hidden>تراجع</button>
+    <button id="toast-undo" class="toast-undo" hidden></button>
   </div>
 
   <div id="update-banner" class="update-banner" hidden>
     <div class="update-text">
-      <strong>يتوفر تحديث جديد ✨</strong>
+      <strong data-i18n="update.title">يتوفر تحديث جديد ✨</strong>
       <span id="update-note"></span>
     </div>
-    <button id="btn-update" class="btn-primary">تحديث الآن</button>
+    <button id="btn-update" class="btn-primary" data-i18n="update.now">تحديث الآن</button>
   </div>
 
   <div id="install-hint" class="install-hint" hidden>
     <span id="install-hint-text"></span>
-    <button id="install-hint-close" class="icon-btn" aria-label="إغلاق" title="إغلاق">✕</button>
+    <button id="install-hint-close" class="icon-btn" aria-label="إغلاق" title="إغلاق" data-i18n-title="tip.close">✕</button>
   </div>
 
+  <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

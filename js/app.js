@@ -6,23 +6,33 @@ const STORAGE_KEY = "qada-state-v1";
 const HIJRI_YEAR_DAYS = 354;
 const GREGORIAN_YEAR_DAYS = 365;
 const MONTH_DAYS = 30;
-
-const PRAYERS = [
-  { id: "fajr",    name: "الفجر"   },
-  { id: "dhuhr",   name: "الظهر"   },
-  { id: "asr",     name: "العصر"   },
-  { id: "maghrib", name: "المغرب"  },
-  { id: "isha",    name: "العشاء"  },
-];
-
-const fmt = new Intl.NumberFormat("ar-EG");
-const num = (n) => fmt.format(n);
-
 const LOG_RETENTION_DAYS = 90;
 
-const gregDateFmt = new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "long", year: "numeric" });
-const hijriDateFmt = new Intl.DateTimeFormat("ar-EG-u-ca-islamic-umalqura", { day: "numeric", month: "long", year: "numeric" });
-const weekdayFmt = new Intl.DateTimeFormat("ar-EG", { weekday: "long" });
+const THEME_KEY = "qada-theme";
+const REMINDER_KEY = "qada-reminder";
+const LAST_EXPORT_KEY = "qada-last-export";
+const BACKUP_SNOOZE_KEY = "qada-backup-nag";
+const REMINDER_SHOWN_KEY = "qada-reminder-shown";
+
+const PRAYERS = [
+  { id: "fajr" }, { id: "dhuhr" }, { id: "asr" }, { id: "maghrib" }, { id: "isha" },
+];
+const prayerName = (id) => t(`prayer.${id}`);
+
+/* ─── مُنسِّقات تتبع اللغة الحالية ─── */
+let num, gregDateFmt, hijriDateFmt, weekdayFmt, percentSign;
+
+function makeFormatters() {
+  const ar = getLang() === "ar";
+  const locale = ar ? "ar-EG" : "en-GB";
+  const numFmt = new Intl.NumberFormat(locale);
+  num = (n) => numFmt.format(n);
+  gregDateFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" });
+  hijriDateFmt = new Intl.DateTimeFormat(`${locale}-u-ca-islamic-umalqura`, { day: "numeric", month: "long", year: "numeric" });
+  weekdayFmt = new Intl.DateTimeFormat(locale, { weekday: "long" });
+  percentSign = ar ? "٪" : "%";
+}
+makeFormatters();
 
 function dateKey(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -30,21 +40,12 @@ function dateKey(d) {
 const todayKey = () => dateKey(new Date());
 
 function daysWord(n) {
-  return n === 1 ? "يوم واحد" : n === 2 ? "يومين" : n <= 10 ? `${num(n)} أيام` : `${num(n)} يومًا`;
+  if (n === 1) return t("days.one");
+  if (n === 2) return t("days.two");
+  return t(n <= 10 ? "days.few" : "days.many", { n: num(n) });
 }
 
-const MOTIVATION = [
-  "«أَحَبُّ الأعمالِ إلى اللهِ أدومُها وإن قَلَّ» — متفق عليه",
-  "«إنَّ أولَ ما يُحاسَبُ به العبدُ يومَ القيامةِ من عملِه صلاتُه» — رواه أبو داود",
-  "﴿إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا﴾",
-  "﴿وَسَارِعُوا إِلَىٰ مَغْفِرَةٍ مِنْ رَبِّكُمْ وَجَنَّةٍ عَرْضُهَا السَّمَاوَاتُ وَالْأَرْضُ﴾",
-  "﴿فَاسْتَبِقُوا الْخَيْرَاتِ﴾",
-  "«من نَسِيَ صلاةً فليصلِّها إذا ذكرها» — متفق عليه",
-  "﴿وَأَقِمِ الصَّلَاةَ لِذِكْرِي﴾",
-  "﴿إِنَّ الْحَسَنَاتِ يُذْهِبْنَ السَّيِّئَاتِ﴾",
-  "«واعلموا أنَّ خيرَ أعمالِكم الصلاةَ» — رواه ابن ماجه",
-  "قليلٌ دائمٌ خيرٌ من كثيرٍ منقطع — داوم ولو على صلاة واحدة يوميًا",
-];
+const MOTIVATION_COUNT = 10;
 
 /* ═══════════════════ الحالة والتخزين ═══════════════════ */
 
@@ -73,23 +74,27 @@ function loadState() {
   }
 }
 
-/* كل تعديل يمر من هنا: تحقّق ← تقييد ← حفظ ← عرض */
+/* كل تعديل يمر من هنا: تحقّق ← تقييد ← حفظ ← عرض ← أوسمة */
 function update(mutator) {
   mutator(state);
   state = sanitize(state);
+  const newBadges = newlyEarnedMilestones();
+  if (newBadges.length) state.celebrated.push(...newBadges);
   persist();
   renderMain();
+  if (newBadges.length) showMilestone(newBadges[0]);
 }
 
 function sanitize(s) {
   const clean = {
-    version: 2,
+    version: 3,
     calendar: s.calendar === "gregorian" ? "gregorian" : "hijri",
     totals: emptyCounts(),
     done: emptyCounts(),
     fasting: { total: toSafeInt(s.fasting?.total), done: 0 },
     goal: Math.min(toSafeInt(s.goal), 1000),
     log: {},
+    celebrated: [],
     updatedAt: Date.now(),
   };
   for (const { id } of PRAYERS) {
@@ -111,6 +116,9 @@ function sanitize(s) {
       if (p > 0 || f > 0) clean.log[k] = { p, f };
     }
   }
+  if (Array.isArray(s.celebrated)) {
+    clean.celebrated = s.celebrated.filter((id) => MILESTONES.some((m) => m.id === id));
+  }
   return clean;
 }
 
@@ -130,12 +138,67 @@ function toSafeInt(v) {
 
 function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  writeReminderMeta();
 }
 
 // حفظ إضافي عند مغادرة الصفحة (احتياط)
 window.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden" && state) persist();
 });
+
+/* ═══════════════════ الأوسمة ═══════════════════ */
+
+function totalDoneAll(s) {
+  let sum = 0;
+  for (const { id } of PRAYERS) sum += s.done[id];
+  return sum;
+}
+function overallPercent(s) {
+  let total = 0, done = 0;
+  for (const { id } of PRAYERS) { total += s.totals[id]; done += s.done[id]; }
+  return total > 0 ? (done / total) * 100 : 0;
+}
+
+const MILESTONES = [
+  { id: "p100",  emoji: "🌱", test: (s) => totalDoneAll(s) >= 100 },
+  { id: "p500",  emoji: "🌿", test: (s) => totalDoneAll(s) >= 500 },
+  { id: "p1000", emoji: "🌳", test: (s) => totalDoneAll(s) >= 1000 },
+  { id: "p5000", emoji: "⭐", test: (s) => totalDoneAll(s) >= 5000 },
+  { id: "q25",   emoji: "🥉", test: (s) => overallPercent(s) >= 25 },
+  { id: "q50",   emoji: "🥈", test: (s) => overallPercent(s) >= 50 },
+  { id: "q75",   emoji: "🥇", test: (s) => overallPercent(s) >= 75 },
+  { id: "q100",  emoji: "🏆", test: (s) => overallPercent(s) >= 100 && totalDoneAll(s) > 0 },
+  { id: "s7",    emoji: "🔥", test: (s) => computeStreak(s.log) >= 7 },
+  { id: "s30",   emoji: "🌙", test: (s) => computeStreak(s.log) >= 30 },
+  { id: "fast",  emoji: "🕋", test: (s) => s.fasting.total > 0 && s.fasting.done >= s.fasting.total },
+];
+
+function newlyEarnedMilestones() {
+  return MILESTONES
+    .filter((m) => m.test(state) && !state.celebrated.includes(m.id))
+    .map((m) => m.id);
+}
+
+function showMilestone(id) {
+  const m = MILESTONES.find((x) => x.id === id);
+  if (!m) return;
+  $("milestone-emoji").textContent = m.emoji;
+  $("milestone-name").textContent = t(`badge.${id}`);
+  if (navigator.vibrate) navigator.vibrate([30, 60, 30, 60, 120]);
+  $("milestone-dialog").showModal();
+}
+
+function renderBadges() {
+  const grid = $("badges-grid");
+  grid.innerHTML = "";
+  for (const m of MILESTONES) {
+    const earned = state.celebrated.includes(m.id);
+    const div = document.createElement("div");
+    div.className = "badge-item" + (earned ? " earned" : "");
+    div.innerHTML = `<span class="badge-emoji">${m.emoji}</span><span class="badge-name">${t(`badge.${m.id}`)}</span>`;
+    grid.appendChild(div);
+  }
+}
 
 /* ═══════════════════ العناصر ═══════════════════ */
 
@@ -160,6 +223,63 @@ function showView(name) {
   if (name === "settings") renderSettingsInputs();
 }
 
+/* ═══════════════════ اللغة والمظهر ═══════════════════ */
+
+function applyLang(lang) {
+  if (lang) localStorage.setItem(LANG_KEY, lang);
+  const isAr = getLang() === "ar";
+  document.documentElement.lang = isAr ? "ar" : "en";
+  document.documentElement.dir = isAr ? "rtl" : "ltr";
+  document.title = isAr ? "قضاء الصلوات" : "Qada Prayers";
+  makeFormatters();
+  document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    el.title = t(el.dataset.i18nTitle);
+    el.setAttribute("aria-label", t(el.dataset.i18nTitle));
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  markPrefTabs();
+  setMotivation();
+  if (state) {
+    buildPrayerCards();
+    renderMain();
+    if (currentView === "settings") renderSettingsInputs();
+  }
+  updateSetupPreview();
+}
+
+function applyTheme(choice) {
+  if (choice === "light" || choice === "dark") {
+    localStorage.setItem(THEME_KEY, choice);
+    document.documentElement.dataset.theme = choice;
+  } else {
+    localStorage.removeItem(THEME_KEY);
+    delete document.documentElement.dataset.theme;
+  }
+  const dark = document.documentElement.dataset.theme === "dark"
+    || (!document.documentElement.dataset.theme && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", dark ? "#101817" : "#0f766e");
+  markPrefTabs();
+}
+
+function markPrefTabs() {
+  const theme = localStorage.getItem(THEME_KEY) || "system";
+  document.querySelectorAll("#theme-tabs .tab-btn").forEach((b) => {
+    b.classList.toggle("active", b.dataset.themeChoice === theme);
+  });
+  const lang = getLang();
+  document.querySelectorAll("#lang-tabs .tab-btn").forEach((b) => {
+    b.classList.toggle("active", b.dataset.langChoice === lang);
+  });
+}
+
+document.querySelectorAll("#theme-tabs .tab-btn").forEach((b) => {
+  b.addEventListener("click", () => applyTheme(b.dataset.themeChoice));
+});
+document.querySelectorAll("#lang-tabs .tab-btn").forEach((b) => {
+  b.addEventListener("click", () => applyLang(b.dataset.langChoice));
+});
+
 /* ═══════════════════ شاشة الإعداد ═══════════════════ */
 
 function readSetupInputs() {
@@ -180,15 +300,10 @@ function updateLeapNote() {
   }
   // أقصى عدد سنوات كبيسة يمكن أن تقع داخل N سنة متتالية = ceil(N / 4)
   const maxExtraDays = Math.ceil(years / 4);
-  const daysWord =
-    maxExtraDays === 1 ? "يوم واحد" :
-    maxExtraDays === 2 ? "يومين" :
-    maxExtraDays <= 10 ? `${num(maxExtraDays)} أيام` :
-    `${num(maxExtraDays)} يومًا`;
   el.hidden = false;
   el.textContent = maxExtraDays > 0
-    ? `⚠️ ملاحظة: بعض السنوات الميلادية كبيسة (٣٦٦ يومًا). لمدة ${num(years)} سنة قد تحتاج إضافة حتى ${daysWord} في خانة الأيام — مع ملحوظة أن هذا أقصى عدد أيام ممكن أن يكون إضافيًا.`
-    : "⚠️ ملاحظة: بعض السنوات الميلادية كبيسة (٣٦٦ يومًا)، فقد تحتاج إضافة يوم عن كل سنة كبيسة مرّت خلال المدة.";
+    ? t("setup.leapNote", { years: num(years), days: daysWord(maxExtraDays) })
+    : t("setup.leapNote0");
 }
 
 function updateSetupPreview() {
@@ -197,7 +312,7 @@ function updateSetupPreview() {
   const el = $("setup-preview");
   if (totalDays > 0) {
     el.hidden = false;
-    el.textContent = `عليك قضاء ${num(totalDays)} صلاة لكل فرض (${num(totalDays * 5)} صلاة إجمالًا)`;
+    el.textContent = t("setup.preview", { count: num(totalDays), total: num(totalDays * 5) });
   } else {
     el.hidden = true;
   }
@@ -210,14 +325,18 @@ $("setup-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const { totalDays, calendar } = readSetupInputs();
   if (totalDays <= 0) {
-    showToast("أدخل مدة أكبر من صفر");
+    showToast(t("setup.positive"));
     return;
   }
-  const previousDone = state ? state.done : emptyCounts();
+  const previous = state;
   state = sanitize({
     calendar,
     totals: { fajr: totalDays, dhuhr: totalDays, asr: totalDays, maghrib: totalDays, isha: totalDays },
-    done: previousDone, // إعادة الحساب لا تمسح ما أنجزته
+    done: previous ? previous.done : emptyCounts(), // إعادة الحساب لا تمسح ما أنجزته
+    fasting: previous ? previous.fasting : undefined,
+    goal: previous ? previous.goal : 5,
+    log: previous ? previous.log : undefined,
+    celebrated: previous ? previous.celebrated : undefined,
   });
   persist();
   buildPrayerCards();
@@ -232,7 +351,8 @@ const cardEls = {}; // { fajr: {count, fill, inc, dec, bulk, actions, badge}, ..
 function buildPrayerCards() {
   const list = $("prayer-list");
   list.innerHTML = "";
-  for (const { id, name } of PRAYERS) {
+  for (const { id } of PRAYERS) {
+    const name = prayerName(id);
     const card = document.createElement("div");
     card.className = "card prayer-card";
     card.style.setProperty("--p-color", `var(--c-${id})`);
@@ -243,11 +363,11 @@ function buildPrayerCards() {
       </div>
       <div class="progress-track"><div class="progress-fill"></div></div>
       <div class="prayer-actions">
-        <button class="btn-inc" aria-label="إضافة صلاة ${name}">+١</button>
-        <button class="btn-small btn-bulk" aria-label="إضافة عدد لصلاة ${name}">+٥</button>
-        <button class="btn-small btn-dec" aria-label="تراجع عن صلاة ${name}">−١</button>
+        <button class="btn-inc">${t("btn.inc")}</button>
+        <button class="btn-small btn-bulk">${t("btn.bulk")}</button>
+        <button class="btn-small btn-dec">${t("btn.dec")}</button>
       </div>
-      <div class="prayer-complete-badge" hidden>✓ اكتمل القضاء — تقبّل الله</div>
+      <div class="prayer-complete-badge" hidden>${t("card.complete")}</div>
     `;
     const els = {
       done: card.querySelector(".done-num"),
@@ -339,14 +459,24 @@ function renderMain() {
     els.badge.hidden = !complete;
   }
   const percent = totalAll > 0 ? (doneAll / totalAll) * 100 : 0;
-  $("overall-percent").textContent = num(Math.floor(percent)) + "٪";
+  $("overall-percent").textContent = num(Math.floor(percent)) + percentSign;
   $("overall-done").textContent = num(doneAll);
   $("overall-remaining").textContent = num(totalAll - doneAll);
   const CIRC = 263.9;
   $("ring-progress").style.strokeDashoffset = String(CIRC - (CIRC * percent) / 100);
   $("btn-day-done").disabled = doneAll >= totalAll;
   renderFasting();
+  updateAppBadge();
   if (!views.main.hidden && !$("tab-stats").hidden) renderStats();
+}
+
+/* شارة أيقونة التطبيق: المتبقي من هدف اليوم */
+function updateAppBadge() {
+  if (!("setAppBadge" in navigator)) return;
+  const today = state.log[todayKey()] || { p: 0 };
+  const remaining = state.goal > 0 ? Math.max(0, state.goal - today.p) : 0;
+  if (remaining > 0) navigator.setAppBadge(remaining).catch(() => {});
+  else if (navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
 }
 
 /* ═══════════════════ التبويبات ═══════════════════ */
@@ -354,15 +484,15 @@ function renderMain() {
 const TAB_NAMES = ["prayers", "fasting", "stats"];
 
 function showTab(name) {
-  for (const t of TAB_NAMES) {
-    $("tab-" + t).hidden = t !== name;
-    $("tab-btn-" + t).classList.toggle("active", t === name);
+  for (const tab of TAB_NAMES) {
+    $("tab-" + tab).hidden = tab !== name;
+    $("tab-btn-" + tab).classList.toggle("active", tab === name);
   }
   if (name === "stats") renderStats();
 }
 
-for (const t of TAB_NAMES) {
-  $("tab-btn-" + t).addEventListener("click", () => showTab(t));
+for (const tab of TAB_NAMES) {
+  $("tab-btn-" + tab).addEventListener("click", () => showTab(tab));
 }
 
 /* ═══════════════════ زر اليوم الكامل ═══════════════════ */
@@ -381,8 +511,8 @@ $("btn-day-done").addEventListener("click", () => {
   if (incremented.length === 0) return;
   if (navigator.vibrate) navigator.vibrate([15, 30, 15]);
   const msg = incremented.length === 5
-    ? "أُضيف يوم كامل — تقبّل الله"
-    : `أُضيفت ${num(incremented.length)} صلوات (الباقي مكتمل)`;
+    ? t("dayDone.full")
+    : t("dayDone.partial", { n: num(incremented.length) });
   showToast(msg, () => {
     update((s) => {
       for (const id of incremented) {
@@ -423,7 +553,7 @@ $("fasting-setup-form").addEventListener("submit", (e) => {
 
 $("fasting-inc").addEventListener("click", () => addFasting(1));
 $("fasting-dec").addEventListener("click", () => addFasting(-1));
-$("fasting-bulk").addEventListener("click", () => openBulkDialog("fasting", null, "أيام الصيام"));
+$("fasting-bulk").addEventListener("click", () => openBulkDialog("fasting", null, t("prayer.fastingName")));
 
 /* ═══════════════════ الإحصائيات ═══════════════════ */
 
@@ -447,9 +577,9 @@ function computeStreak(log) {
 function estimateText() {
   let remaining = 0;
   for (const { id } of PRAYERS) remaining += state.totals[id] - state.done[id];
-  if (remaining === 0) return "اكتمل قضاء الصلوات — تقبّل الله 🎉";
+  if (remaining === 0) return t("stats.estimateDone");
   let rate = state.goal;
-  let basis = "بهدفك اليومي";
+  let basis = t("stats.basisGoal");
   if (rate <= 0) {
     let sum = 0;
     const d = new Date();
@@ -459,13 +589,18 @@ function estimateText() {
       d.setDate(d.getDate() - 1);
     }
     rate = sum / 7;
-    basis = "بمعدلك خلال آخر ٧ أيام";
+    basis = t("stats.basisAvg");
   }
-  if (rate <= 0) return "حدد هدفًا يوميًا من الإعدادات، أو ابدأ التسجيل ليظهر التقدير هنا.";
+  if (rate <= 0) return t("stats.estimateNone");
   const days = Math.ceil(remaining / rate);
   const end = new Date();
   end.setDate(end.getDate() + days);
-  return `${basis}، ستُنهي القضاء بعد نحو ${daysWord(days)} إن شاء الله — ${hijriDateFmt.format(end)} (${gregDateFmt.format(end)})`;
+  return t("stats.estimate", {
+    basis,
+    days: daysWord(days),
+    hijri: hijriDateFmt.format(end),
+    greg: gregDateFmt.format(end),
+  });
 }
 
 function renderStats() {
@@ -477,22 +612,21 @@ function renderStats() {
   const goal = state.goal;
   if (goal > 0) {
     const met = today.p >= goal;
-    $("goal-status").textContent = met
-      ? `ما شاء الله — أنجزت هدف اليوم (${num(today.p)} من ${num(goal)})`
-      : `أنجزت ${num(today.p)} من ${num(goal)} — واصل!`;
+    $("goal-status").textContent = t(met ? "stats.goalMet" : "stats.goalProgress", { done: num(today.p), goal: num(goal) });
     $("goal-fill").style.width = `${Math.min(100, (today.p / goal) * 100)}%`;
     $("goal-card").classList.toggle("goal-met", met);
   } else {
-    $("goal-status").textContent = "لم تحدد هدفًا يوميًا — يمكنك تحديده من الإعدادات.";
+    $("goal-status").textContent = t("stats.goalNone");
     $("goal-fill").style.width = "0%";
     $("goal-card").classList.remove("goal-met");
   }
 
   $("estimate-text").textContent = estimateText();
+  renderBadges();
   buildChart();
 }
 
-/* مخطط آخر ١٤ يومًا — SVG بلا مكتبات، الأحدث على اليمين */
+/* مخطط آخر ١٤ يومًا — SVG بلا مكتبات، الأحدث في نهاية اتجاه القراءة */
 function buildChart() {
   const wrap = $("chart-wrap");
   const days = [];
@@ -504,7 +638,7 @@ function buildChart() {
   }
   const values = days.map((dt) => (state.log[dateKey(dt)] || { p: 0 }).p);
   if (values.every((v) => v === 0)) {
-    wrap.innerHTML = `<p class="hint-text chart-empty">لا يوجد نشاط بعد — ابدأ اليوم وسيظهر تقدمك هنا.</p>`;
+    wrap.innerHTML = `<p class="hint-text chart-empty">${t("stats.chartEmpty")}</p>`;
     return;
   }
   const W = 340, H = 150, top = 18, bottom = 24, left = 8, right = 8;
@@ -517,7 +651,7 @@ function buildChart() {
   if (goal > 0 && goal <= max) {
     const gy = top + plotH - (goal / max) * plotH;
     svg += `<line x1="${left}" y1="${gy}" x2="${left + plotW}" y2="${gy}" class="chart-goal-line"/>`
-      + `<text x="${left + plotW}" y="${gy - 4}" text-anchor="end" class="chart-goal-label">الهدف ${num(goal)}</text>`;
+      + `<text x="${left + plotW}" y="${gy - 4}" text-anchor="end" class="chart-goal-label">${t("stats.chartGoal", { n: num(goal) })}</text>`;
   }
   days.forEach((dt, i) => {
     const v = values[i];
@@ -535,11 +669,11 @@ function buildChart() {
       if (isToday) svg += `<text x="${cx}" y="${y - 5}" text-anchor="middle" class="chart-value">${num(v)}</text>`;
     }
     if (i % 3 === 1) {
-      svg += `<text x="${cx}" y="${H - 8}" text-anchor="middle" class="chart-day">${isToday ? "اليوم" : num(dt.getDate())}</text>`;
+      svg += `<text x="${cx}" y="${H - 8}" text-anchor="middle" class="chart-day">${isToday ? t("stats.chartToday") : num(dt.getDate())}</text>`;
     }
   });
   svg += `<line x1="${left}" y1="${top + plotH}" x2="${left + plotW}" y2="${top + plotH}" class="chart-baseline"/>`;
-  wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="الصلوات المقضية يوميًا خلال آخر ١٤ يومًا">${svg}</svg>`;
+  wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${t("stats.chartAria")}">${svg}</svg>`;
 }
 
 /* ═══════════════════ الإضافة المخصصة ═══════════════════ */
@@ -549,7 +683,7 @@ let bulkTarget = null; // { kind: "prayer", id } أو { kind: "fasting" }
 
 function openBulkDialog(kind, id, name) {
   bulkTarget = { kind, id };
-  $("bulk-title").textContent = `إضافة عدد — ${name}`;
+  $("bulk-title").textContent = t("bulk.title", { name });
   const remaining = kind === "fasting"
     ? state.fasting.total - state.fasting.done
     : state.totals[id] - state.done[id];
@@ -569,10 +703,9 @@ bulkDialog.addEventListener("close", () => {
   const apply = (n) => (kind === "fasting" ? addFasting(n) : addDone(id, n));
   const applied = apply(requested);
   if (applied <= 0) return;
-  const unit = kind === "fasting" ? "يوم" : "صلاة";
   const msg = applied < requested
-    ? `أُضيفت ${num(applied)} فقط (اكتمل العدد المطلوب)`
-    : `أُضيفت ${num(applied)} ${unit}`;
+    ? t("toast.addedOnly", { n: num(applied) })
+    : t(kind === "fasting" ? "toast.addedDays" : "toast.addedPrayers", { n: num(applied) });
   showToast(msg, () => apply(-applied));
 });
 
@@ -584,35 +717,27 @@ $("btn-back").addEventListener("click", () => showView("main"));
 function renderSettingsInputs() {
   const grid = $("totals-inputs");
   grid.innerHTML = "";
-  for (const { id, name } of PRAYERS) {
+  const addField = (id, name, doneCount, totalValue, color) => {
     const label = document.createElement("label");
     label.className = "field";
-    label.style.setProperty("--p-color", `var(--c-${id})`);
-    label.innerHTML = `<span>${name} (أنجزت ${num(state.done[id])})</span>`;
+    label.style.setProperty("--p-color", color);
+    label.innerHTML = `<span>${name} ${t("settings.doneCount", { n: num(doneCount) })}</span>`;
     const input = document.createElement("input");
     input.type = "number";
     input.inputMode = "numeric";
     input.min = "0";
     input.id = `total-${id}`;
-    input.value = String(state.totals[id]);
+    input.value = String(totalValue);
     label.appendChild(input);
     grid.appendChild(label);
+  };
+  for (const { id } of PRAYERS) {
+    addField(id, prayerName(id), state.done[id], state.totals[id], `var(--c-${id})`);
   }
-  // صف الصيام
-  const fLabel = document.createElement("label");
-  fLabel.className = "field";
-  fLabel.style.setProperty("--p-color", "var(--c-fasting)");
-  fLabel.innerHTML = `<span>أيام الصيام (أنجزت ${num(state.fasting.done)})</span>`;
-  const fInput = document.createElement("input");
-  fInput.type = "number";
-  fInput.inputMode = "numeric";
-  fInput.min = "0";
-  fInput.id = "total-fasting";
-  fInput.value = String(state.fasting.total);
-  fLabel.appendChild(fInput);
-  grid.appendChild(fLabel);
+  addField("fasting", t("prayer.fastingName"), state.fasting.done, state.fasting.total, "var(--c-fasting)");
 
   $("goal-input").value = String(state.goal);
+  renderReminderControls();
 }
 
 $("totals-form").addEventListener("submit", (e) => {
@@ -625,14 +750,14 @@ $("totals-form").addEventListener("submit", (e) => {
   }
   const newFastingTotal = toSafeInt($("total-fasting").value);
   if (newFastingTotal < state.fasting.done) clamped = true;
-  if (clamped && !confirm("بعض الأعداد الجديدة أقل مما أنجزته بالفعل، وسيُعتبر ذلك الفرض مكتملًا. متابعة؟")) {
+  if (clamped && !confirm(t("settings.clampConfirm"))) {
     return;
   }
   update((s) => {
     s.totals = newTotals;
     s.fasting.total = newFastingTotal;
   });
-  showToast("تم حفظ التعديلات");
+  showToast(t("settings.saved"));
   showView("main");
 });
 
@@ -641,10 +766,91 @@ $("btn-recalc").addEventListener("click", () => showView("setup"));
 $("goal-form").addEventListener("submit", (e) => {
   e.preventDefault();
   update((s) => { s.goal = Math.min(toSafeInt($("goal-input").value), 1000); });
-  showToast("تم حفظ الهدف اليومي");
+  showToast(t("settings.goalSaved"));
   showView("main");
   showTab("stats");
 });
+
+/* ═══ التذكير اليومي ═══ */
+
+function renderReminderControls() {
+  const enabled = Boolean(localStorage.getItem(REMINDER_KEY));
+  if (enabled) $("reminder-time").value = localStorage.getItem(REMINDER_KEY);
+  $("btn-reminder").textContent = t(enabled ? "settings.reminderDisable" : "settings.reminderEnable");
+  $("btn-reminder").classList.toggle("btn-danger-outline", enabled);
+}
+
+$("btn-reminder").addEventListener("click", async () => {
+  if (localStorage.getItem(REMINDER_KEY)) {
+    localStorage.removeItem(REMINDER_KEY);
+    renderReminderControls();
+    writeReminderMeta();
+    showToast(t("settings.reminderOff"));
+    return;
+  }
+  if (!("Notification" in window)) {
+    showToast(t("settings.reminderDenied"));
+    return;
+  }
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    showToast(t("settings.reminderDenied"));
+    return;
+  }
+  const time = $("reminder-time").value || "20:00";
+  localStorage.setItem(REMINDER_KEY, time);
+  renderReminderControls();
+  writeReminderMeta();
+  registerPeriodicReminder();
+  showToast(t("settings.reminderSaved"));
+});
+
+async function registerPeriodicReminder() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    if ("periodicSync" in reg) {
+      await reg.periodicSync.register("qada-reminder", { minInterval: 12 * 60 * 60 * 1000 });
+    }
+  } catch { /* غير مدعوم — يبقى التذكير داخل التطبيق فقط */ }
+}
+
+/* عاكس صغير للحالة في Cache Storage ليقرأه عامل الخدمة (لا يصل إلى localStorage) */
+function writeReminderMeta() {
+  if (!("caches" in window)) return;
+  const today = state ? (state.log[todayKey()] || { p: 0, f: 0 }) : { p: 0, f: 0 };
+  const meta = {
+    reminder: localStorage.getItem(REMINDER_KEY) || "",
+    date: todayKey(),
+    todayCount: today.p + today.f,
+    title: t("reminder.notifTitle"),
+    body: t("reminder.notifBody"),
+  };
+  caches.open("qada-meta")
+    .then((c) => c.put("meta.json", new Response(JSON.stringify(meta), { headers: { "Content-Type": "application/json" } })))
+    .catch(() => {});
+}
+
+/* تذكير داخل التطبيق عندما يكون مفتوحًا وقت التذكير */
+function checkLocalReminder() {
+  const time = localStorage.getItem(REMINDER_KEY);
+  if (!time || !state) return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  if (localStorage.getItem(REMINDER_SHOWN_KEY) === todayKey()) return;
+  const [h, m] = time.split(":").map(Number);
+  const now = new Date();
+  if (now.getHours() < h || (now.getHours() === h && now.getMinutes() < m)) return;
+  const today = state.log[todayKey()];
+  if (today && (today.p > 0 || today.f > 0)) return;
+  localStorage.setItem(REMINDER_SHOWN_KEY, todayKey());
+  navigator.serviceWorker?.ready
+    .then((reg) => reg.showNotification(t("reminder.notifTitle"), {
+      body: t("reminder.notifBody"),
+      icon: "icons/icon-192.png",
+      tag: "qada-reminder",
+    }))
+    .catch(() => {});
+}
+setInterval(checkLocalReminder, 10 * 60 * 1000);
 
 /* ═══ النسخ الاحتياطي ═══ */
 
@@ -655,7 +861,8 @@ $("btn-export").addEventListener("click", () => {
   a.download = `qada-backup-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  showToast("تم تصدير النسخة الاحتياطية");
+  localStorage.setItem(LAST_EXPORT_KEY, String(Date.now()));
+  showToast(t("settings.exported"));
 });
 
 $("btn-import").addEventListener("click", () => $("import-file").click());
@@ -673,17 +880,33 @@ $("import-file").addEventListener("change", async (e) => {
     persist();
     buildPrayerCards();
     showView("main");
-    showToast("تم استيراد البيانات بنجاح");
+    showToast(t("settings.imported"));
   } catch {
-    showToast("الملف غير صالح — لم يتغير شيء");
+    showToast(t("settings.importInvalid"));
   }
 });
+
+/* تنبيه لطيف عند مرور مدة طويلة بلا نسخة احتياطية */
+function maybeNagBackup() {
+  if (!state) return;
+  const snooze = Number(localStorage.getItem(BACKUP_SNOOZE_KEY) || 0);
+  if (Date.now() < snooze) return;
+  const lastExport = Number(localStorage.getItem(LAST_EXPORT_KEY) || 0);
+  const doneAll = totalDoneAll(state) + state.fasting.done;
+  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+  const due = (!lastExport && doneAll >= 50)
+    || (lastExport > 0 && Date.now() - lastExport > THIRTY_DAYS && state.updatedAt > lastExport);
+  if (!due) return;
+  localStorage.setItem(BACKUP_SNOOZE_KEY, String(Date.now() + 14 * 24 * 60 * 60 * 1000));
+  showToast(t("backup.nag"), () => $("btn-export").click(), t("backup.now"));
+}
 
 /* ═══ إعادة التعيين ═══ */
 
 $("btn-reset").addEventListener("click", () => {
-  if ($("reset-confirm").value.trim() !== "نعم") {
-    showToast("اكتب «نعم» في الخانة للتأكيد");
+  const word = $("reset-confirm").value.trim();
+  if (word !== t("settings.resetWord") && word !== "نعم" && word.toUpperCase() !== "YES") {
+    showToast(t("settings.resetType"));
     return;
   }
   localStorage.removeItem(STORAGE_KEY);
@@ -692,27 +915,28 @@ $("btn-reset").addEventListener("click", () => {
   $("setup-form").reset();
   updateSetupPreview();
   showView("setup");
-  showToast("تمت إعادة التعيين");
+  showToast(t("settings.resetDone"));
 });
 
 /* ═══════════════════ التنبيهات ═══════════════════ */
 
 const toastEl = $("toast");
 let toastTimer = null;
-let toastUndoFn = null;
+let toastActionFn = null;
 
-function showToast(text, undoFn = null) {
+function showToast(text, actionFn = null, actionLabel = null) {
   clearTimeout(toastTimer);
-  toastUndoFn = undoFn;
+  toastActionFn = actionFn;
   $("toast-text").textContent = text;
-  $("toast-undo").hidden = !undoFn;
+  $("toast-undo").hidden = !actionFn;
+  if (actionFn) $("toast-undo").textContent = actionLabel || t("toast.undo");
   toastEl.hidden = false;
-  toastTimer = setTimeout(() => { toastEl.hidden = true; toastUndoFn = null; }, undoFn ? 6000 : 2500);
+  toastTimer = setTimeout(() => { toastEl.hidden = true; toastActionFn = null; }, actionFn ? 6000 : 2500);
 }
 
 $("toast-undo").addEventListener("click", () => {
-  if (toastUndoFn) toastUndoFn();
-  toastUndoFn = null;
+  if (toastActionFn) toastActionFn();
+  toastActionFn = null;
   toastEl.hidden = true;
 });
 
@@ -720,16 +944,12 @@ $("toast-undo").addEventListener("click", () => {
 
 $("btn-share").addEventListener("click", async () => {
   const url = location.origin + location.pathname;
-  const data = {
-    title: "قضاء الصلوات",
-    text: "تطبيق مجاني لمتابعة قضاء الصلوات — يعمل بدون إنترنت 🕌",
-    url,
-  };
+  const data = { title: t("share.title"), text: t("share.text"), url };
   if (navigator.share) {
     try { await navigator.share(data); } catch { /* أغلق المستخدم نافذة المشاركة */ }
   } else if (navigator.clipboard) {
     await navigator.clipboard.writeText(url);
-    showToast("تم نسخ رابط التطبيق — أرسله لأصدقائك");
+    showToast(t("share.copied"));
   }
 });
 
@@ -760,7 +980,7 @@ function requestInstall() {
   if (isAppInstalled()) {
     $("btn-install-icon").hidden = true;
     $("install-card").hidden = true;
-    showToast("التطبيق مثبت بالفعل على جهازك ✓");
+    showToast(t("install.already"));
     return;
   }
   if (deferredInstallPrompt) {
@@ -768,7 +988,7 @@ function requestInstall() {
     deferredInstallPrompt = null;
     $("install-card").hidden = true;
   } else {
-    showToast("للتثبيت: افتح قائمة المتصفح ⋮ ثم «إضافة إلى الشاشة الرئيسية»");
+    showToast(t("install.hintOther"));
   }
 }
 
@@ -785,7 +1005,7 @@ window.addEventListener("appinstalled", () => {
   $("btn-install-icon").hidden = true;
   setInstallHint(false);
   localStorage.setItem("qada-install-hint-dismissed", "1");
-  showToast("تم تثبيت التطبيق — تجده في الشاشة الرئيسية 🎉");
+  showToast(t("install.done"));
 });
 
 /* ═══════════════════ المساعدة والجولة التعريفية ═══════════════════ */
@@ -797,11 +1017,11 @@ $("btn-replay-tour").addEventListener("click", () => {
 });
 
 const TOUR_STEPS = [
-  { el: () => $("btn-day-done"), title: "زر اليوم الكامل", text: "قضيت يومًا كاملًا؟ ضغطة واحدة تضيف صلاة لكل فرض من الفروض الخمسة، مع إمكانية التراجع." },
-  { el: () => document.querySelector("#prayer-list .prayer-actions"), title: "عدّادات الصلوات", text: "+١ بعد كل صلاة تقضيها، −١ للتراجع عن ضغطة بالخطأ، و+٥ لإضافة عدد كبير دفعة واحدة." },
-  { el: () => document.querySelector(".tabs"), title: "التبويبات", text: "تابع قضاء الصيام من تبويب «الصيام»، وشاهد هدفك اليومي وسلسلتك 🔥 وتاريخ الانتهاء المتوقع في «الإحصائيات»." },
-  { el: () => $("btn-share"), title: "شارك التطبيق", text: "أرسل رابط التطبيق لأصدقائك من هذا الزر." },
-  { el: () => $("btn-settings"), title: "الإعدادات", text: "عدّل الأعداد دون فقدان ما أنجزته، وحدد هدفك اليومي، واحتفظ بنسخة احتياطية من بياناتك." },
+  { el: () => $("btn-day-done"), key: "tour.dayDone" },
+  { el: () => document.querySelector("#prayer-list .prayer-actions"), key: "tour.counters" },
+  { el: () => document.querySelector(".tabs"), key: "tour.tabs" },
+  { el: () => $("btn-share"), key: "tour.share" },
+  { el: () => $("btn-settings"), key: "tour.settings" },
 ];
 
 let tourIndex = -1;
@@ -840,9 +1060,9 @@ function positionTourStep(el, step) {
   hl.style.left = `${r.left - 6}px`;
   hl.style.width = `${r.width + 12}px`;
   hl.style.height = `${r.height + 12}px`;
-  $("tour-title").textContent = step.title;
-  $("tour-text").textContent = step.text;
-  $("tour-next").textContent = tourIndex === TOUR_STEPS.length - 1 ? "إنهاء" : "التالي";
+  $("tour-title").textContent = t(step.key + ".t");
+  $("tour-text").textContent = t(step.key + ".b");
+  $("tour-next").textContent = t(tourIndex === TOUR_STEPS.length - 1 ? "tour.finish" : "tour.next");
   $("tour-dots").innerHTML = TOUR_STEPS
     .map((_, i) => `<span class="dot${i === tourIndex ? " active" : ""}"></span>`)
     .join("");
@@ -868,12 +1088,9 @@ window.addEventListener("resize", () => {
 
 function maybeShowInstallHint() {
   const dismissed = localStorage.getItem("qada-install-hint-dismissed");
-  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
-  if (dismissed || standalone) return;
+  if (dismissed || isAppInstalled()) return;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  $("install-hint-text").textContent = isIOS
-    ? "للتثبيت: اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية»"
-    : "للتثبيت: افتح قائمة المتصفح ⋮ ثم «إضافة إلى الشاشة الرئيسية»";
+  $("install-hint-text").textContent = t(isIOS ? "install.hintIOS" : "install.hintOther");
   setInstallHint(true);
 }
 
@@ -885,18 +1102,22 @@ $("install-hint-close").addEventListener("click", () => {
 /* ═══════════════════ البدء ═══════════════════ */
 
 // آية أو حديث يتبدل يوميًا
-(function setMotivation() {
+function setMotivation() {
   const startOfYear = new Date(new Date().getFullYear(), 0, 0);
   const dayOfYear = Math.floor((Date.now() - startOfYear.getTime()) / 86400000);
-  $("motivation-text").textContent = MOTIVATION[dayOfYear % MOTIVATION.length];
-})();
+  $("motivation-text").textContent = t(`motivation.${dayOfYear % MOTIVATION_COUNT}`);
+}
 
 state = loadState();
+applyLang(null); // تطبيق اللغة المحفوظة على كل النصوص
+applyTheme(localStorage.getItem(THEME_KEY) || "system");
 if (state) {
   persist(); // تثبيت الترقية من إصدار أقدم فورًا
   buildPrayerCards();
   showView("main");
   maybeStartTour();
+  setTimeout(maybeNagBackup, 2500);
+  checkLocalReminder();
 } else {
   showView("setup");
 }
@@ -918,5 +1139,7 @@ if ("serviceWorker" in navigator) {
     location.reload();
   });
 
-  navigator.serviceWorker.register("sw.js").catch(() => { /* يعمل التطبيق بدونه، فقط بلا وضع عدم الاتصال */ });
+  navigator.serviceWorker.register("sw.js")
+    .then(() => { if (localStorage.getItem(REMINDER_KEY)) registerPeriodicReminder(); })
+    .catch(() => { /* يعمل التطبيق بدونه، فقط بلا وضع عدم الاتصال */ });
 }

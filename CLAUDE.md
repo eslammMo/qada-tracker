@@ -14,15 +14,16 @@ Offline-first PWA (Arabic, RTL) for tracking make-up (qada) prayers. Plain HTML/
 
 ## State model — the critical invariant
 
-Single object in `localStorage` under key `qada-state-v1` (key name kept for compatibility; `version` field is 2):
+Single object in `localStorage` under key `qada-state-v1` (key name kept for compatibility; `version` field is 3):
 
 ```js
-{ version: 2, calendar: "hijri"|"gregorian",
+{ version: 3, calendar: "hijri"|"gregorian",
   totals: {fajr, dhuhr, asr, maghrib, isha},
   done:   {fajr, dhuhr, asr, maghrib, isha},
   fasting: { total, done },          // قضاء الصيام
   goal: 5,                           // daily prayer target; 0 = off
   log: { "YYYY-MM-DD": {p, f} },     // per-day applied increments (prayers/fasting)
+  celebrated: ["p100", ...],         // milestone ids already celebrated (MILESTONES in app.js)
   updatedAt }
 ```
 
@@ -38,10 +39,22 @@ Single object in `localStorage` under key `qada-state-v1` (key name kept for com
 2. Set `UPDATE_NOTE` in `sw.js` to a short Arabic description of what changed — it is shown to users in the in-app update banner (new SW posts `{type:"UPDATE_READY", note}` to open pages on activate; app.js shows `#update-banner` only when the page already had a controller, so first installs don't see it).
 3. Commit and push to `main` — GitHub Pages redeploys automatically.
 
-## Other localStorage keys
+## Other localStorage keys (device prefs — deliberately NOT in state/backup)
 
 - `qada-install-hint-dismissed` — user dismissed install card/hint (or app got installed)
 - `qada-tour-done` — onboarding tour already shown (set when the tour *starts*; replayable from the help view `#view-help` via `startTour()`)
+- `qada-theme` — `light`/`dark`; absent = follow system. Applied as `<html data-theme>` by an inline head script (no flash) and `applyTheme()`
+- `qada-lang` — `en`; absent = Arabic. See i18n below
+- `qada-reminder` — `"HH:MM"` when the daily reminder is enabled
+- `qada-last-export` / `qada-backup-nag` / `qada-reminder-shown` — backup-nag and reminder bookkeeping timestamps
+
+## i18n
+
+All user-visible strings live in `js/i18n.js` (`STRINGS.ar` / `STRINGS.en`, `t(key, params)` with `{param}` placeholders). Static HTML carries `data-i18n` / `data-i18n-title` / `data-i18n-placeholder`; `applyLang()` in app.js sweeps them, flips `<html lang dir>`, rebuilds the `Intl` formatters (`num()` gives Arabic-Indic digits in ar), and re-renders. **Never hardcode a UI string in app.js or index.html — add a key to both languages.** Use CSS logical properties (`border-inline-start`, `inset-inline-end`) so LTR mirrors for free.
+
+## Reminder architecture
+
+The SW can't read localStorage, so `persist()` mirrors a tiny JSON (`reminder time, today's count, localized strings`) into the Cache Storage cache `qada-meta` (`meta.json`). `sw.js` handles `periodicsync` (tag `qada-reminder`, registered when enabled) and shows a notification if due and nothing logged. The activate-cleanup must never delete `qada-meta`. In-app fallback `checkLocalReminder()` covers the app-open case.
 
 ## Conventions
 
