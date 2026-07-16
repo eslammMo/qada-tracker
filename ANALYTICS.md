@@ -75,12 +75,11 @@ At `https://YOUR-CODE.goatcounter.com` you'll see:
 - **Some ad-blockers** block known analytics domains, so real numbers may be slightly higher than reported.
 - **Per-day uniqueness only** — see section 4.
 
-## 8. Setup steps (when you're ready)
+## 8. Current status: ✅ live
 
-1. Go to <https://www.goatcounter.com/> → **Sign up** (free).
-2. Choose a code, e.g. `qada-tracker` → your dashboard is instantly live at `https://qada-tracker.goatcounter.com`.
-3. Tell Claude the code → the ~10-line beacon gets added to `js/app.js` (with `/web` / `/app` / `/install` paths), service worker version bumped, and pushed.
-4. Open your dashboard anytime to watch the numbers.
+The beacon is wired into `js/app.js` (`trackVisit()`, endpoint `https://emo.goatcounter.com/count`) with the `/web` / `/app` / `/install` paths. Pings are skipped when offline or on `localhost` (development/tests never pollute the stats).
+
+**Dashboard:** <https://emo.goatcounter.com> (log in with the account owner's credentials).
 
 ---
 
