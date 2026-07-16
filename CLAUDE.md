@@ -56,6 +56,10 @@ All user-visible strings live in `js/i18n.js` (`STRINGS.ar` / `STRINGS.en`, `t(k
 
 The SW can't read localStorage, so `persist()` mirrors a tiny JSON (`reminder time, today's count, localized strings`) into the Cache Storage cache `qada-meta` (`meta.json`). `sw.js` handles `periodicsync` (tag `qada-reminder`, registered when enabled) and shows a notification if due and nothing logged. The activate-cleanup must never delete `qada-meta`. In-app fallback `checkLocalReminder()` covers the app-open case.
 
+## Analytics
+
+Anonymous visit counting via GoatCounter (`ANALYTICS_ENDPOINT` in app.js → `https://emo.goatcounter.com/count`); design rationale in `ANALYTICS.md`. `trackVisit(path)` sends an Image-GET ping — paths: `/web` (browser), `/app` (installed PWA), `/install` (appinstalled event). Skipped when offline or on localhost (so tests never ping). Never send anything user-identifying.
+
 ## Conventions
 
 - UI text is Arabic; numbers displayed with `Intl.NumberFormat("ar-EG")` via the `num()` helper. Mind Arabic pluralization (يوم واحد / يومين / أيام / يومًا).

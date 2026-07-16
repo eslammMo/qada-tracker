@@ -1099,6 +1099,20 @@ $("install-hint-close").addEventListener("click", () => {
   localStorage.setItem("qada-install-hint-dismissed", "1");
 });
 
+/* ═══════════════════ عدّاد الزيارات ═══════════════════ */
+
+/* GoatCounter: إشارة مجهولة تمامًا — بلا كوكيز وبلا أي بيانات شخصية (انظر ANALYTICS.md) */
+const ANALYTICS_ENDPOINT = "https://emo.goatcounter.com/count";
+
+function trackVisit(path) {
+  if (!navigator.onLine) return;
+  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return;
+  const img = new Image(1, 1);
+  img.src = `${ANALYTICS_ENDPOINT}?p=${encodeURIComponent(path)}&r=${encodeURIComponent(document.referrer || "")}&rnd=${Date.now()}`;
+}
+
+window.addEventListener("appinstalled", () => trackVisit("/install"));
+
 /* ═══════════════════ البدء ═══════════════════ */
 
 // آية أو حديث يتبدل يوميًا
@@ -1122,6 +1136,7 @@ if (state) {
   showView("setup");
 }
 maybeShowInstallHint();
+trackVisit(isAppInstalled() ? "/app" : "/web");
 
 if ("serviceWorker" in navigator) {
   // إن لم يكن للصفحة متحكّم سابق فهذا أول تثبيت وليس تحديثًا — لا نظهر الإشعار
